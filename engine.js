@@ -119,7 +119,7 @@ function el(tag,attrs,html){const e=document.createElement(tag);if(attrs)for(con
 function buildSim(sim){
   const d=sim.def,id=d.id,asp=d.aspect||16/9,sec=el('section',{class:'sim',id:'sim-'+id,'aria-labelledby':'h-'+id});
   const hasGraph=d.graph!==false,hasPredict=!!d.challenges;
-  sec.innerHTML=`<div class="pathbar" hidden></div><div class="sim-head"><p class="eyebrow">${secLabel(d.apUnit)}</p><h2 id="h-${id}">${d.title}</h2><p class="lede"></p><div class="real-uses" hidden></div><div class="gutbox" hidden></div><div class="real-uses ru-after" hidden></div><div class="modebar" role="group" aria-label="How do you want to use this tool?"></div></div>
+  sec.innerHTML=`<div class="pathbar" hidden></div><div class="sim-head">${d.skills?'<p class="skills"></p>':''}<p class="eyebrow">${secLabel(d.apUnit)}</p><h2 id="h-${id}">${d.title}</h2><p class="lede"></p><div class="real-uses" hidden></div><div class="gutbox" hidden></div><div class="real-uses ru-after" hidden></div><div class="modebar" role="group" aria-label="How do you want to use this tool?"></div></div>
   <div class="panel review" aria-live="polite"></div><div class="rv-note"></div>
   <div class="bench">
     <div class="stage">${d.scale?`<p class="scale"></p>`:''}<canvas id="${id}-stage" style="aspect-ratio:${asp};--asp:${asp}" role="img" aria-label="${d.title} simulation"></canvas>
@@ -162,7 +162,7 @@ function buildSim(sim){
   const ui=sim.ui;ui.sec=sec;ui.review=sec.querySelector('.review');ui.rvNote=sec.querySelector('.rv-note');ui.lede=sec.querySelector('.lede');ui.uses=sec.querySelector('.real-uses');ui.gut=sec.querySelector('.gutbox');ui.uses2=sec.querySelector('.ru-after');ui.stage=sec.querySelector('#'+id+'-stage');ui.graph=sec.querySelector('#'+id+'-graph');
   ui.clock=sec.querySelector('.clock');ui.play=sec.querySelector('[data-act=play]');ui.ctrls=sec.querySelector('.controls');ui.read=sec.querySelector('.readouts');
   ui.pred=sec.querySelector('.predict');ui.info=sec.querySelector('.info');ui.tbl=sec.querySelector('.tbl');ui.gm=sec.querySelector('#'+id+'-gm');ui.gx=sec.querySelector('#'+id+'-gx');ui.gy=sec.querySelector('#'+id+'-gy');
-  ui.toast=sec.querySelector('.toast');ui.ctl={};ui.ctlW={};ui.actB={};ui.tiles={};ui.cap=sec.querySelector('.cap');ui.scale=sec.querySelector('.scale');ui.lab=sec.querySelector('.lab');
+  ui.toast=sec.querySelector('.toast');ui.ctl={};ui.ctlW={};ui.actB={};ui.tiles={};ui.cap=sec.querySelector('.cap');ui.scale=sec.querySelector('.scale');ui.lab=sec.querySelector('.lab');ui.skills=sec.querySelector('.sim-head .skills');
   ui.speedSel=sec.querySelector('#'+id+'-speed');ui.stepBtn=sec.querySelector('[data-act=step]');ui.tourbar=sec.querySelector('.tourbar');
   ui.donecard=el('div',{class:'donecard','aria-live':'polite'});ui.donecard.hidden=true;ui.gamecard=el('div',{class:'gamecard','aria-live':'polite'});ui.gamecard.hidden=true;ui.gamebtns=el('div',{class:'gamebtns row'});ui.gamebtns.hidden=true;ui.tourbar.after(ui.donecard,ui.gamecard);
   ui.vstep=el('div',{class:'vstep','aria-live':'polite'});ui.vstep.hidden=true;ui.gamecard.after(ui.vstep);
@@ -226,7 +226,7 @@ function tourGo(sim,i){const st=tourSteps(sim);if(!st.length)return;if(i>=st.len
 function tourExit(sim,why){const wasOn=sim.tour&&sim.tour.on;sim.tour={on:false,i:0};sim.ui.tourbar.hidden=true;if(sim.ui.cap)sim.ui.cap.hidden=false;setSpeed(sim,1);setRunning(sim,true);if(sim.def.onTourExit)sim.def.onTourExit(sim);
   if(wasOn&&sim.mode==='guided'&&sim.guide&&sim.guide.phase==='tour'&&why!=='level'&&why!=='mode'){
     const S=sim.gutS;if(why==='exit'){if(sim.guide.keep&&S&&S.snap){applyValues(sim,S.snap);resetSim(sim);if(S.keepG)S.g=S.keepG;}setMode(sim,'lab',true);}
-    else if(sim.guide.keep&&S&&S.keepG)guideReveal(sim);else guideTry(sim);}}
+    else if(sim.guide.keep&&S&&S.keepG)guidePreReveal(sim);else guideTry(sim);}}
 function drawFocus(sim,ctx,LH){if(!sim.tour||!sim.tour.on)return;const s=tourSteps(sim)[sim.tour.i];if(!s||!s.focus)return;let f=typeof s.focus==='function'?s.focus(sim):s.focus;if(!f)return;
   const rects=Array.isArray(f[0])?f:[f];const sub=(x,y,w,h,r)=>{r=Math.min(r,w/2,h/2);ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();};
   ctx.save();ctx.beginPath();ctx.rect(0,0,800,LH);rects.forEach(r=>sub(r[0],r[1],r[2],r[3],10));ctx.fillStyle='rgba(10,10,14,.5)';ctx.fill('evenodd');
@@ -257,7 +257,7 @@ function setMode(sim,mode,user){const d=sim.def;if(mode==='guided'&&!hasGuide(si
   sec.querySelectorAll('.modebar button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
   sim.ui.donecard.hidden=true;sim.ui.gamecard.hidden=true;sim.guide=null;
   const ex=sim.ui.tourbar&&sim.ui.tourbar.querySelector('[data-tour=exit]');if(ex)ex.textContent=mode==='guided'?'Skip to the full lab':'Exit walkthrough';
-  if(mode==='guided'&&d.gut&&GUIDED_GUT){const S=sim.gutS||(sim.gutS={g:null,m:null});S.g=null;S.m=null;S.snap=null;S.keepG=null;sim.guide={phase:'gut'};sim.ch={idx:0,phase:'ask',pick:null,changed:false};renderChallenge(sim);
+  if(mode==='guided'&&d.gut&&GUIDED_GUT){const S=sim.gutS||(sim.gutS={g:null,m:null});S.g=null;S.m=null;S.snap=null;S.keepG=null;sim.ui.calc=null;sim.guide={phase:'gut'};sim.ch={idx:0,phase:'ask',pick:null,changed:false};renderChallenge(sim);
     const base={};(d.controls||[]).forEach(c=>base[c.id]=c.def);applyValues(sim,base);resetSim(sim);setRunning(sim,true);guideGut(sim);}
   else if(mode==='guided'){sim.guide={phase:'tour'};sim.ch={idx:0,phase:'ask',pick:null,changed:false};renderChallenge(sim);tourGo(sim,0);}
   else if(mode==='game'){gameStart(sim);}
@@ -274,24 +274,39 @@ function ctlHome(sim){Object.values((sim.ui&&sim.ui.ctlW)||{}).forEach(w=>{if(w.
 /* Guided, step 1: the question, then the student's gut answer with only the controls it needs, beside the picture. */
 function guideGut(sim){const d=sim.def,G=d.gut,P=d.practical,c=sim.ui.donecard,S=sim.gutS;sim.guide.phase='gut';sim.ui.sec.classList.add('g-gut');
   const hk=P&&P.hook?lvText(P.hook):'';
-  c.innerHTML=`${hk?`<p class="dc-h">The question</p><p class="dc-q">${hk}</p>`:''}<p class="dc-h">Your gut</p><p class="dc-x">${lvText(G.ask)}</p><div class="gs-ctl"></div><div class="row"><button type="button" class="btn primary" data-gg="lock">${G.lockLabel||'Lock in my gut answer'}</button></div><p class="dc-hint">No math yet. Go with what feels right. Next, the walkthrough shows how the math does it.</p>`;
+  c.innerHTML=`${hk?`<p class="dc-h">The question</p><p class="dc-q">${hk}</p>`:''}<p class="dc-h">Your gut</p><p class="dc-x">${lvText(G.ask)}</p><div class="gs-ctl"></div><div class="row"><button type="button" class="btn primary" data-gg="lock">${G.lockLabel||'Lock in my gut answer'}</button></div>${gutHint(G)?`<p class="dc-hint">${gutHint(G)}</p>`:''}`;
   c.hidden=false;ctlPark(sim,G.controls||[],c.querySelector('.gs-ctl'));
   c.querySelector('[data-gg=lock]').onclick=()=>{sim._gutBusy=true;try{S.g=G.lock(sim);}finally{sim._gutBusy=false;}S.snap=Object.assign({},sim.p);S.keepG=S.g;
     ctlHome(sim);sim.ui.sec.classList.remove('g-gut');c.hidden=true;sim.guide.phase='tour';sim.guide.keep=true;
-    const st=tourSteps(sim),start=st.length&&st[0].hook?1:0;if(st.length>start)tourGo(sim,start);else guideReveal(sim);};
+    const go=()=>{sim.guide.phase='tour';const st=tourSteps(sim),start=st.length&&st[0].hook?1:0;if(st.length>start)tourGo(sim,start);else guidePreReveal(sim);};
+    if(G.calc&&calcWhen(G)==='lock')guideCalc(sim,go);else go();};
   const f=c.querySelector('.gs-ctl input,.gs-ctl select,.gs-ctl button');if(f&&f.focus)f.focus({preventScroll:true});}
+/* The line under the gut prompt: gut.hint if the tool sets one; otherwise it depends on whether a "Your turn" calculation follows. */
+function gutHint(G){if(G.hint!==undefined)return lvText(G.hint);return G.calc?'Lock your gut answer, then you will work it out yourself.':'No math yet. Go with what feels right. Next, the walkthrough shows how the math does it.';}
+/* Guided, "Your turn" (gut.calc): the student works the number out and checks it. calc.after:'lock' (default) runs it right after the
+   gut is locked, before the walkthrough; calc.after:'tour' runs it after the walkthrough, back on the student's scene, just before the reveal. */
+const calcWhen=G=>(G.calc&&G.calc.after==='tour')?'tour':'lock';
+function guideCalc(sim,next){const S=sim.gutS,c=sim.ui.donecard;sim.guide.phase='calc';
+  if(calcWhen(sim.def.gut)==='tour'&&S.snap){applyValues(sim,S.snap);resetSim(sim);if(S.keepG)S.g=S.keepG;setRunning(sim,true);}
+  sim.ui.sec.classList.add('g-calc');c.hidden=false;
+  const done=()=>{sim.ui.sec.classList.remove('g-calc');sim.guide.calcDone=true;c.hidden=true;next();};
+  if(!calcBox(sim,c,{guided:true,next:done}))done();}
+function guidePreReveal(sim){const G=sim.def.gut;if(G.calc&&calcWhen(G)==='tour'&&!sim.guide.calcDone)guideCalc(sim,()=>guideReveal(sim));else guideReveal(sim);}
 /* Guided, after the walkthrough: back to the student's scene, the math takes its turn, and the difference in real terms. */
 function guideReveal(sim){const d=sim.def,G=d.gut,S=sim.gutS,c=sim.ui.donecard;sim.guide.phase='reveal';sim.guide.revealed=true;
   if(S.snap){applyValues(sim,S.snap);resetSim(sim);}if(S.keepG)S.g=S.keepG;
   sim._gutBusy=true;try{S.m=G.solve(sim);}finally{sim._gutBusy=false;}
   (d.controls||[]).forEach(x=>{if(sim.ui.ctl[x.id])sim.ui.ctl[x.id].set(sim.p[x.id]);});
-  const u=d.practical&&Array.isArray(d.practical.uses)?d.practical.uses:[],nCh=visibleCh(sim).length;
-  c.innerHTML=`<p class="dc-h">Your gut vs. the math</p><p class="dc-x">Your gut: <b>${S.g.label}</b>.<br>The math: <b>${S.m.label}</b>.</p><div class="dc-take">${G.compare(sim,S.g,S.m)}</div>${u.length?`<div class="dc-uses"><b>${USES_LABEL}:</b><ul>${u.map(x=>'<li>'+x+'</li>').join('')}</ul></div>`:''}<div class="row"><button type="button" class="btn primary" data-gr="next">${nCh?'Next: test yourself':'Finish'}</button></div>`;
+  const u=d.practical&&Array.isArray(d.practical.uses)?d.practical.uses:[],nCh=visibleCh(sim).length,K=sim.ui.calc;
+  const kl=K&&K.done&&Number.isFinite(K.value)?`Your calculation: <b>${calcFmt(G.calc,K.value)}</b>, ${K.correct?'right':'not quite (it is '+calcFmt(G.calc,K.answer)+')'}.<br>`:'';
+  c.innerHTML=`<p class="dc-h">Your gut vs. the math</p><p class="dc-x">Your gut: <b>${S.g.label}</b>.<br>${kl}The math: <b>${S.m.label}</b>.</p><div class="dc-take">${G.compare(sim,S.g,S.m)}</div>${mathLine(sim,'dc')}${u.length?`<div class="dc-uses"><b>${USES_LABEL}:</b><ul>${u.map(x=>'<li>'+x+'</li>').join('')}</ul></div>`:''}<div class="row"><button type="button" class="btn primary" data-gr="next">${nCh?'Next: test yourself':'Finish'}</button></div>`;
   c.hidden=false;c.querySelector('[data-gr=next]').onclick=()=>{c.hidden=true;guideTry(sim);};
   sim.infoDirty=true;updateReadouts(sim);drawGraph(sim);}
 function guideTry(sim){const list=visibleCh(sim);if(!list.length){guideDone(sim);return;}sim.guide.phase='try';sim.ui.sec.classList.add('g-try');
   sim.ch={idx:0,phase:'ask',pick:null,changed:false};if(sim.def.onChallenge)sim.def.onChallenge(sim,list[0],'ask');renderChallenge(sim);
-  const c=sim.ui.donecard;c.innerHTML=`<p class="dc-h">Your turn: ${list.length} quick prediction${list.length>1?'s':''}</p><p class="dc-x">Below the simulation, pick what you think will happen. Then watch the model test your prediction.</p>`;c.hidden=false;}
+  const c=sim.ui.donecard,anyNum=list.some(x=>x.kind==='num');
+  c.innerHTML=anyNum?`<p class="dc-h">Your turn: ${list.length} quick question${list.length>1?'s':''}</p><p class="dc-x">Below the simulation, answer each one. When it asks for a number, work it out and type it in. When it asks for a prediction, pick what you think will happen.</p>`
+    :`<p class="dc-h">Your turn: ${list.length} quick prediction${list.length>1?'s':''}</p><p class="dc-x">Below the simulation, pick what you think will happen. Then watch the model test your prediction.</p>`;c.hidden=false;}
 function guideDone(sim){if(!sim.guide)sim.guide={};sim.guide.phase='done';const sec=sim.ui.sec,d=sim.def;sec.classList.remove('g-try');sec.classList.add('g-done');
   const c=sim.ui.donecard;const tk=d.practical&&d.practical.takeaway?lvText(d.practical.takeaway):'';const an=d.practical&&d.practical.answer?lvText(d.practical.answer):'';c.innerHTML=`<p class="dc-h">You finished the guide.</p>${an?`<p class="dc-ans"><b>Back to the question:</b> ${an}</p>`:''}${tk?`<p class="dc-take"><b>Take this with you:</b> ${tk}</p>`:''}${USES_OPEN&&!(sim.guide&&sim.guide.revealed)&&d.practical&&Array.isArray(d.practical.uses)&&d.practical.uses.length?`<div class="dc-uses"><b>${USES_LABEL}:</b><ul>${d.practical.uses.map(x=>'<li>'+x+'</li>').join('')}</ul></div>`:''}<p class="dc-x">${d.game?'Test yourself in the challenge, or explore':'Now explore'} on your own: the full lab has every variable, the graph, the data table and an investigation to try.</p><div class="row">${d.game?`<button type="button" class="btn primary" data-dc="game">Play the ${d.game.label||'challenge'}</button>`:''}<button type="button" class="btn${d.game?'':' primary'}" data-dc="lab">Open the full lab</button><button type="button" class="btn" data-dc="again">Start the guide again</button></div>`;c.hidden=false;
   c.querySelector('[data-dc=lab]').onclick=()=>setMode(sim,'lab',true);const g=c.querySelector('[data-dc=game]');if(g)g.onclick=()=>setMode(sim,'game',true);c.querySelector('[data-dc=again]').onclick=()=>setMode(sim,'guided',true);}
@@ -641,6 +656,7 @@ function toCSV(sim){if(!sim.trials.length)return '';const cols=trialCols(sim),q=
 function applyLevel(sim){const ui=sim.ui,d=sim.def;
   ui.lede.textContent=lvText(d.lede);if(ui.uses){const P=d.practical,u=P&&P.uses?(Array.isArray(P.uses)?P.uses:lvText(P.uses)):null;const hk=P&&P.hook?lvText(P.hook):'';ui.uses.hidden=!(hk||(u&&u.length));const ul=u&&u.length?'<details class="ru-d"'+(USES_OPEN?' open':'')+'><summary>'+USES_LABEL+'</summary><ul>'+u.map(x=>'<li>'+x+'</li>').join('')+'</ul></details>':'';
     if(USES_AFTER&&ui.uses2){ui.uses.hidden=!hk;ui.uses.innerHTML=hk?'<p class="ru-q">'+hk+'</p>':'';ui.uses2.hidden=!ul;ui.uses2.innerHTML=ul;}else ui.uses.innerHTML=(hk?'<p class="ru-q">'+hk+'</p>':'')+ul;}if(ui.scale)ui.scale.textContent=lvText(d.scale);
+  if(ui.skills)ui.skills.innerHTML='<b>The math:</b> '+lvText(d.skills);
   if(ui.lab)ui.lab.innerHTML='<p class="lab-h">Investigation</p>'+lvText(d.lab);
   gutRender(sim);
   if(sim.tour&&sim.tour.on)tourExit(sim,'level');
@@ -665,24 +681,69 @@ function applyLevel(sim){const ui=sim.ui,d=sim.def;
    def.gut = {ask, lockLabel, mathLabel, lock(sim)->{v,label}, solve(sim)->{v,label} (moves the sim to the math answer),
    compare(sim,g,m)->html (the difference in real terms), how (level text: how the math found it), again(sim) (new scenario),
    better:'higher'|'lower' (which way v is better; used by tests)}. State lives in sim.gutS; Reset and switching modes clear it (gutClear). */
+/* ---------- Typed number answers: gut.calc ("Your turn"), num challenges and Review num questions ----------
+   ansNum accepts 1,234.5  $428  12%  −3 (commas, $, % and spaces are ignored). */
+function ansNum(s){if(s===undefined||s===null)return NaN;const t=String(s).replace(/−/g,'-').replace(/[\s$,%]/g,'');return /^[-+]?(\d|\.\d)/.test(t)?parseFloat(t):NaN;}
+function ansTol(tol,ans){let t=tol;if(typeof t==='function'){try{t=t(ans);}catch(e){console.error(e);t=NaN;}}return Number.isFinite(t)&&t>=0?t:Math.max(Math.abs(ans)*0.01,1e-9);}
+/* o: {unit, d}. unit '$' prefixes, '%' suffixes, any other unit follows after a space. d = decimals (default: up to 2, or 4 below 1). */
+function ansFmt(o,v){if(!Number.isFinite(v))return '—';o=o||{};const a=Math.abs(v),d=o.d!==undefined?o.d:null,mx=d!==null?d:(a<1&&a>0?4:2);
+  let n=a.toLocaleString('en-US',{minimumFractionDigits:d!==null?d:0,maximumFractionDigits:mx});const neg=v<0&&+n.replace(/,/g,'')!==0?'−':'';const u=o.unit||'';
+  return u==='$'?neg+'$'+n:neg+n+(u==='%'?'%':u?' '+u:'');}
+const calcFmt=(C,v)=>ansFmt(C,v);
+/* Level text that may also be a function of the sim (prompt, steps, hint, formula). Arrays pass through. */
+function lvAny(x,sim){let v=typeof x==='function'?x(sim):x;if(v&&typeof v==='object'&&!Array.isArray(v))v=lvText(v);if(typeof v==='function')v=v(sim);if(Array.isArray(v))return v;return v===undefined||v===null?'':String(v);}
+const stepsHtml=s=>Array.isArray(s)?`<ol class="rv-steps">${s.map(x=>'<li>'+x+'</li>').join('')}</ol>`:(s?`<div class="calc-steps">${s}</div>`:'');
+/* True while a tool with gut.calc has a locked gut and the student has not yet checked (or been shown) the calculation.
+   draw() and metrics should hide the answer while this is true, so the picture does not give it away. */
+function calcPending(sim){const G=sim.def.gut;return !!(G&&G.calc&&sim.gutS&&sim.gutS.g&&!sim.gutS.m&&!(sim.ui.calc&&sim.ui.calc.done)&&!(sim.tour&&sim.tour.on));}
+BL.calcPending=calcPending;
+/* Render the "Your turn" calculation into host. Result lives in sim.ui.calc = {value, correct, answer, done, tries, raw}.
+   o: {guided, next (Guided: the Continue button), onDone (Full lab)}. Returns false if the answer is not a finite number (step skipped). */
+function calcBox(sim,host,o){const G=sim.def.gut,C=G.calc;let K=sim.ui.calc;
+  if(!K||!K.done){let ans;try{ans=+(typeof C.answer==='function'?C.answer(sim):C.answer);}catch(e){console.error(e);ans=NaN;}if(!Number.isFinite(ans))return false;
+    if(!K)K=sim.ui.calc={value:null,correct:false,answer:ans,done:false,tries:0,raw:''};K.answer=ans;}
+  const tol=ansTol(C.tol,K.answer),id=sim.def.id+'-calc',u=C.unit||'',f=v=>calcFmt(C,v);
+  let prompt='',steps='';try{prompt=lvAny(C.prompt,sim);if(K.done)steps=lvAny(C.steps,sim);}catch(e){console.error(e);}
+  let h=(o.guided?'<p class="dc-h">Your turn</p>':'')+`<div class="calc-q">${prompt}</div>`;
+  if(!K.done)h+=`<div class="rv-num calc-in"><label for="${id}">Your answer${u?` (${u})`:''}</label><div class="row"><input id="${id}" class="vl-in" type="text" inputmode="decimal" autocomplete="off" value="${esc(K.raw||'')}"><button type="button" class="btn primary" data-calc="check">Check</button><button type="button" class="btn" data-calc="show">Show me</button></div>${K.tries?`<p class="rv-try">Not yet: ${f(K.value)} is more than ${f(tol)} away. ${lvAny(C.hint,sim)||'Check each step and your units, then try again.'}</p>`:''}</div>`;
+  else{const hv=Number.isFinite(K.value);
+    h+=`<p class="verdict ${K.correct?'ok':'no'}" tabindex="-1">${K.correct?`Right: ${f(K.value)} is within ${f(tol)} of the answer.`:hv?`Not quite: ${f(K.value)} is more than ${f(tol)} away. Here is how to work it out.`:'Here is how to work it out.'}</p>${stepsHtml(steps)}<p class="calc-ans">The answer: <b>${f(K.answer)}</b></p>`;
+    if(o.guided){const st=tourSteps(sim),more=calcWhen(G)==='lock'&&st.length>(st.length&&st[0].hook?1:0);h+=`<div class="row"><button type="button" class="btn primary" data-calc="next">${C.nextLabel||(more?'Next: the walkthrough':'Next: see the math')}</button></div>`;}}
+  host.innerHTML=`<div class="calc">${h}</div>`;
+  const redo=()=>{sim.infoDirty=true;updateReadouts(sim);drawGraph(sim);if(K.done&&o.onDone){o.onDone();return;}calcBox(sim,host,o);
+    const fo=host.querySelector(K.done?'.verdict':'input');if(fo&&fo.focus)fo.focus({preventScroll:true});};
+  const inp=host.querySelector('input'),b=k=>host.querySelector(`[data-calc=${k}]`);
+  if(inp){inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();b('check').click();}});inp.addEventListener('input',()=>{K.raw=inp.value;});}
+  if(b('check'))b('check').onclick=()=>{const v=ansNum(inp.value);K.raw=inp.value;if(!Number.isFinite(v)){inp.focus();return;}K.value=v;
+    if(Math.abs(v-K.answer)<=tol+1e-9){K.correct=true;K.done=true;}else{K.tries++;if(K.tries>=2){K.correct=false;K.done=true;}}redo();};
+  if(b('show'))b('show').onclick=()=>{K.done=true;K.correct=false;redo();};
+  if(b('next'))b('next').onclick=()=>{if(o.next)o.next();};
+  return true;}
+/* The formula with the case's numbers (gut.formula), or else how the math found it (gut.how), for the reveal. */
+function mathLine(sim){const G=sim.def.gut;if(G.formula){let f='';try{f=lvAny(G.formula,sim);}catch(e){console.error(e);}if(f)return `<p class="dc-math"><span class="dc-ml">The math, with these numbers</span>${f}</p>`;}
+  const h=lvText(G.how);return h?`<p class="dc-how"><b>How the math did it:</b> ${h}</p>`:'';}
 function gutRender(sim){const G=sim.def.gut,box=sim.ui.gut;if(!box)return;if(!G){box.hidden=true;return;}const S=sim.gutS||(sim.gutS={g:null,m:null});if(sim.mode!=='guided')ctlHome(sim);
+  const C=G.calc;if(C&&!S.g&&sim.mode!=='guided')sim.ui.calc=null;const K=sim.ui.calc,calcOpen=!!(C&&S.g&&!S.m);
   const step=(n,t,body,cls)=>`<div class="gs ${cls}"><span class="gs-n" aria-hidden="true">${n}</span><div class="gs-b"><p class="gs-t">${t}</p>${body}</div></div>`;
   let h='<p class="gut-h">Gut vs. math</p><div class="gs-row">';
   h+=step(1,'Your gut',S.g?`<p class="gs-r">You picked <b>${S.g.label}</b>.</p>`:`<p>${lvText(G.ask)}</p><div class="gs-ctl"></div><button type="button" class="btn primary" data-gut="lock">${G.lockLabel||'Lock in my gut answer'}</button>`,S.g?'done':'on');
-  h+=step(2,'The math',S.m?`<p class="gs-r">The math says <b>${S.m.label}</b>.</p>${G.how?`<p class="gs-how">${lvText(G.how)}</p>`:''}`:`<button type="button" class="btn${S.g?' primary':''}" data-gut="solve"${S.g?'':' disabled'}>${G.mathLabel||'Show me the math'}</button>`,S.m?'done':(S.g?'on':'wait'));
+  let fm='';if(C&&S.m&&G.formula){try{fm=lvAny(G.formula,sim);}catch(e){console.error(e);}}
+  const kr=C&&S.m&&K&&K.done&&Number.isFinite(K.value)?`<p class="gs-r">Your calculation: <b>${calcFmt(C,K.value)}</b>, ${K.correct?'right':'not quite'}.</p>`:'';
+  h+=step(2,calcOpen?'Your turn, then the math':'The math',S.m?`<p class="gs-r">The math says <b>${S.m.label}</b>.</p>${kr}${G.how?`<p class="gs-how">${lvText(G.how)}</p>`:''}${fm?`<p class="gs-math">${fm}</p>`:''}`:`${calcOpen?'<div class="gs-calc"></div>':''}<button type="button" class="btn${S.g&&!(calcOpen&&!(K&&K.done))?' primary':''}" data-gut="solve"${S.g?'':' disabled'}>${G.mathLabel||'Show me the math'}</button>`,S.m?'done':(S.g?'on':'wait'));
   h+=step(3,'What the math got you',S.g&&S.m?`<p class="gs-cmp">${G.compare(sim,S.g,S.m)}</p><button type="button" class="btn" data-gut="again">Try another one</button>`:'<p class="gs-wait">Lock in your gut answer, then let the math take a turn.</p>',S.g&&S.m?'done res':'wait');
   box.innerHTML=h+'</div>';box.hidden=false;
   if(!S.g&&sim.mode!=='guided'){const t=box.querySelector('.gs-ctl');if(t)ctlPark(sim,G.controls||[],t);}
+  const ch=box.querySelector('.gs-calc');if(ch&&!calcBox(sim,ch,{onDone:()=>{gutRender(sim);const v=box.querySelector('.gs-calc .verdict');if(v&&v.focus)v.focus({preventScroll:true});}}))ch.remove();
   box.querySelectorAll('[data-gut]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.gut;
     ctlHome(sim);sim._gutBusy=true;try{
-    if(k==='lock')S.g=G.lock(sim);else if(k==='solve'){S.m=G.solve(sim);(sim.def.controls||[]).forEach(c=>{if(sim.ui.ctl[c.id])sim.ui.ctl[c.id].set(sim.p[c.id]);});}
-    else{S.g=null;S.m=null;if(G.again)G.again(sim);(sim.def.controls||[]).forEach(c=>{if(sim.ui.ctl[c.id])sim.ui.ctl[c.id].set(sim.p[c.id]);});}
+    if(k==='lock'){sim.ui.calc=null;S.g=G.lock(sim);}else if(k==='solve'){S.m=G.solve(sim);(sim.def.controls||[]).forEach(c=>{if(sim.ui.ctl[c.id])sim.ui.ctl[c.id].set(sim.p[c.id]);});}
+    else{S.g=null;S.m=null;sim.ui.calc=null;if(G.again)G.again(sim);(sim.def.controls||[]).forEach(c=>{if(sim.ui.ctl[c.id])sim.ui.ctl[c.id].set(sim.p[c.id]);});}
     }finally{sim._gutBusy=false;}
     sim.infoDirty=true;gutRender(sim);updateReadouts(sim);drawGraph(sim);
-    const f=box.querySelector('.gs.on button,.gs.res button');if(f&&f.focus)f.focus({preventScroll:true});}));}
+    const f=box.querySelector((C&&S.g&&!S.m?'.gs-calc input,':'')+'.gs.on button,.gs.res button');if(f&&f.focus)f.focus({preventScroll:true});}));}
 BL.gutRender=gutRender;
 /* Anything the engine changes (Reset, a challenge, a tour step, a review set-up) starts a new problem, so old gut and math answers go. */
-function gutClear(sim){if(sim._gutBusy||(sim.guide&&sim.guide.keep)||!sim.gutS||(!sim.gutS.g&&!sim.gutS.m))return;sim.gutS.g=null;sim.gutS.m=null;if(sim.ui&&sim.ui.gut)gutRender(sim);}
+function gutClear(sim){if(sim._gutBusy||(sim.guide&&sim.guide.keep)||!sim.gutS||(!sim.gutS.g&&!sim.gutS.m))return;sim.gutS.g=null;sim.gutS.m=null;if(sim.ui)sim.ui.calc=null;if(sim.ui&&sim.ui.gut)gutRender(sim);}
 BL.gutClear=gutClear;
 /* ---------- predict-then-test challenges ---------- */
 function visibleCh(sim){const d=sim.def;const list=typeof d.challenges==='function'?d.challenges(sim):(d.challenges||[]);return list.filter(c=>atLeast(c.lvl));}
@@ -692,7 +753,8 @@ function runAction(sim,id){const a=(sim.def.actions||[]).find(a=>a.id===id);if(a
 function renderChallenge(sim){const box=sim.ui.pred;if(!box)return;const list=visibleCh(sim),c=sim.ch;
   if(!list.length){box.innerHTML='<div class="p-head"><h3>Predict, then test</h3></div><p class="status">Choose more detail at the top of the page to see challenges for this simulation.</p>';return;}
   if(c.idx>=list.length)c.idx=0;const ch=list[c.idx];
-  const head=`<div class="p-head"><h3>${sim.def.challengeTitle||'Predict, then test'}</h3><span class="count">${c.idx+1} of ${list.length}</span></div><p class="q">${ch.q}</p>`;
+  const head=`<div class="p-head"><h3>${sim.def.challengeTitle||'Predict, then test'}</h3><span class="count">${c.idx+1} of ${list.length}</span></div><p class="q">${typeof ch.q==='function'?ch.q(sim):ch.q}</p>`;
+  if(ch.kind==='num'){renderNumChallenge(sim,box,list,ch,head);return;}
   if(c.phase==='ask'){box.innerHTML=head+`<div class="choices">${ch.choices.map((t,i)=>`<button type="button" class="choice" data-i="${i}">${t}</button>`).join('')}</div>`;
     box.querySelectorAll('.choice').forEach(b=>b.addEventListener('click',()=>startChallenge(sim,+b.dataset.i)));}
   else if(c.phase==='running'){box.innerHTML=head+`<p class="pick">Your prediction: <b>${ch.choices[c.pick]}</b></p><p class="status">${c.changed?(ch.changeText||'Changed')+'. Watch what happens.':'Holding steady first…'}</p><div class="prog"><i></i></div>`;}
@@ -701,6 +763,25 @@ function renderChallenge(sim){const box=sim.ui.pred;if(!box)return;const list=vi
     box.querySelector('[data-a=again]').addEventListener('click',()=>{c.phase='ask';if(sim.def.onChallenge)sim.def.onChallenge(sim,list[c.idx],'ask');renderChallenge(sim);});
     const fin=box.querySelector('[data-a=finish]');if(fin)fin.addEventListener('click',()=>guideDone(sim));
     const nx=box.querySelector('[data-a=next],[data-a=first]');if(nx)nx.addEventListener('click',()=>{c.idx=nx.dataset.a==='next'?c.idx+1:0;c.phase='ask';const nl=visibleCh(sim);if(sim.def.onChallenge)sim.def.onChallenge(sim,nl[c.idx],'ask');renderChallenge(sim);});}}
+/* kind:'num' challenge: {kind:'num', lvl, q, answer:(sim)=>number or number, tol (number or (answer)=>number), unit, d, hint, explain}.
+   The student types a number and checks it. A miss gets one more try (with the hint); the second miss or "Show me" gives the answer. */
+const numAns=(sim,ch)=>{try{return +(typeof ch.answer==='function'?ch.answer(sim):ch.answer);}catch(e){console.error(e);return NaN;}};
+function renderNumChallenge(sim,box,list,ch,head){const c=sim.ch,id=sim.def.id+'-chn',u=ch.unit||'',ans=numAns(sim,ch),tol=ansTol(ch.tol,ans),f=v=>ansFmt(ch,v);
+  if(c.phase!=='done'){box.innerHTML=head+`<div class="rv-num ch-num"><label for="${id}">Your answer${u?` (${u})`:''}</label><div class="row"><input id="${id}" class="vl-in" type="text" inputmode="decimal" autocomplete="off" value="${esc(c.raw||'')}"><button type="button" class="btn primary" data-a="check">Check</button>${c.tries?'<button type="button" class="btn" data-a="show">Show me</button>':''}</div>${c.tries?`<p class="rv-try">Not yet. ${lvAny(ch.hint,sim)||'Check each step and your units, then try again.'}</p>`:''}</div>`;
+    const inp=box.querySelector('input'),chk=box.querySelector('[data-a=check]');
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();chk.click();}});
+    chk.addEventListener('click',()=>{const v=ansNum(inp.value);c.raw=inp.value;if(!Number.isFinite(v)){inp.focus();return;}c.val=v;
+      if(Number.isFinite(ans)&&Math.abs(v-ans)<=tol+1e-9){c.ok=true;c.phase='done';}else{c.tries=(c.tries||0)+1;if(c.tries>=2){c.ok=false;c.phase='done';}}
+      if(c.phase==='done'&&sim.def.onChallenge)sim.def.onChallenge(sim,ch,'done');renderChallenge(sim);const n=box.querySelector(c.phase==='done'?'[data-a]':'input');if(n&&n.focus)n.focus({preventScroll:true});});
+    const sh=box.querySelector('[data-a=show]');if(sh)sh.addEventListener('click',()=>{c.ok=false;c.phase='done';if(sim.def.onChallenge)sim.def.onChallenge(sim,ch,'done');renderChallenge(sim);});
+    return;}
+  const ok=!!c.ok;
+  box.innerHTML=head+`<p class="verdict ${ok?'ok':'no'}">${ok?'Correct.':'Not quite.'}</p><p class="pick">${Number.isFinite(c.val)?`You entered <b>${f(c.val)}</b>. `:''}Answer: <b>${f(ans)}</b></p><p class="explain">${explainFor(ch)}</p>
+    <div class="row"><button type="button" class="btn" data-a="again">Try again</button>${c.idx<list.length-1?'<button type="button" class="btn primary" data-a="next">Next</button>':(sim.mode==='guided'?'<button type="button" class="btn primary" data-a="finish">Finish</button>':'<button type="button" class="btn primary" data-a="first">Start over</button>')}</div>`;
+  const fresh=()=>{c.phase='ask';c.tries=0;c.raw='';c.ok=false;c.val=undefined;};
+  box.querySelector('[data-a=again]').addEventListener('click',()=>{fresh();if(sim.def.onChallenge)sim.def.onChallenge(sim,list[c.idx],'ask');renderChallenge(sim);});
+  const fin=box.querySelector('[data-a=finish]');if(fin)fin.addEventListener('click',()=>guideDone(sim));
+  const nx=box.querySelector('[data-a=next],[data-a=first]');if(nx)nx.addEventListener('click',()=>{c.idx=nx.dataset.a==='next'?c.idx+1:0;fresh();const nl=visibleCh(sim);if(sim.def.onChallenge)sim.def.onChallenge(sim,nl[c.idx],'ask');renderChallenge(sim);});}
 function startChallenge(sim,pick){const ch=visibleCh(sim)[sim.ch.idx];sim.ch.pick=pick;
   if(ch.instant){sim.ch.phase='done';if(sim.def.onChallenge)sim.def.onChallenge(sim,ch,'done');renderChallenge(sim);return;}
   const base={};(sim.def.controls||[]).forEach(c=>base[c.id]=c.def);
@@ -788,7 +869,7 @@ function renderReview(sim,focus){const box=sim.ui.review,R=sim.def.review;if(!bo
   box.querySelectorAll('[data-rv-pick]').forEach(b=>b.addEventListener('click',()=>{const n=+b.dataset.rvPick;ans[q.id]={done:true,pick:n,ok:n===q.correct};save();renderReview(sim,true);}));
   const act=(k,f)=>{const b=box.querySelector(`[data-rv=${k}]`);if(b)b.addEventListener('click',f);};
   act('prev',()=>go(i-1));act('next',()=>go(i+1));
-  act('check',()=>{const inp=box.querySelector('input'),raw=(inp.value||'').trim(),v=parseFloat(raw.replace(/,/g,''));if(!isFinite(v)){inp.focus();return;}const a=ans[q.id]||{tries:0};a.val=raw;const hit=Math.abs(v-q.num.ans)<=q.num.tol;if(hit){a.done=true;a.ok=!a.tries;}else a.tries=(a.tries||0)+1;ans[q.id]=a;save();renderReview(sim,true);});
+  act('check',()=>{const inp=box.querySelector('input'),raw=(inp.value||'').trim(),v=ansNum(raw);if(!isFinite(v)){inp.focus();return;}const a=ans[q.id]||{tries:0};a.val=raw;const hit=Math.abs(v-q.num.ans)<=q.num.tol;if(hit){a.done=true;a.ok=!a.tries;}else a.tries=(a.tries||0)+1;ans[q.id]=a;save();renderReview(sim,true);});
   act('show',()=>{const a=ans[q.id]||{};a.done=true;a.ok=false;ans[q.id]=a;save();renderReview(sim,true);});
   const ni=box.querySelector('.rv-num input');if(ni&&!ni.disabled)ni.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const c=box.querySelector('[data-rv=check]');if(c)c.click();}});
   act('redo',()=>{list.forEach(x=>{if(ans[x.id]&&!ans[x.id].ok)delete ans[x.id];});save();const n=list.findIndex(x=>!ans[x.id]);go(n<0?0:n);});
@@ -918,7 +999,17 @@ function buildHome(){const units=document.getElementById('units');units.innerHTM
   const groups={};DEFS.forEach(d=>{(groups[d.apUnit]=groups[d.apUnit]||[]).push(d);});
   jumpEl.innerHTML='<option value="">'+(LAB_META('jump-all')||'All simulations')+'</option>'+SECTIONS.map(u=>{const list=sortSec(groups[u]||[],u);if(!list.length)return '';return `<optgroup label="${secLabel(u)}">${list.map(d=>`<option value="${d.hash}">${d.tab}</option>`).join('')}</optgroup>`;}).join('');}
 
+/* Styles for the skills line, "Your turn" calculations, num challenges and the reveal's math line. Kept here (theme tokens only)
+   so every site that shares this engine gets them without a CSS change. */
+const ENGINE_CSS=`.sim-head .skills{margin:0 0 6px;font-size:14px;line-height:1.4;color:var(--fg)}.sim-head .skills b{color:var(--rj-ink);font-weight:700;margin-right:.2em}
+.calc-q{margin:4px 0 10px;font-size:16px;line-height:1.5}.gs .calc-q{font-size:inherit}.calc .rv-num{margin:0 0 8px}.calc .row{align-items:center}
+.calc .verdict{margin:6px 0 8px}.calc .verdict:focus{outline:0}.calc-steps{margin:6px 0 8px;padding:8px 12px;background:var(--card);border:1px solid var(--line);border-radius:8px;line-height:1.5}
+.calc .rv-steps{margin:6px 0 8px}.calc-ans{margin:6px 0 10px}.gs-calc{margin:0 0 10px}.ch-num{margin:8px 0 10px}.ch-num .vl-in{width:10em}
+.dc-math,.gs-math{margin:6px 0 10px;padding:7px 12px;background:var(--card);border-left:3px solid var(--rj);border-radius:0 8px 8px 0;font-weight:600;line-height:1.5;font-variant-numeric:tabular-nums}
+.dc-ml{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.dc-how{margin:6px 0 10px;font-size:15px;line-height:1.5;color:var(--muted)}`;
+function engineCss(){if(document.getElementById('rl-engine-css'))return;const s=document.createElement('style');s.id='rl-engine-css';s.textContent=ENGINE_CSS;document.head.appendChild(s);}
 BL.start=function(){
+  engineCss();
   if(EMBED)document.documentElement.classList.add('embed');
   homeEl=document.getElementById('home');simsEl=document.getElementById('sims');jumpEl=document.getElementById('jump');backEl=document.getElementById('back');
   DEFS.forEach(d=>{applyPractical(d);if(REVIEWS[d.id])d.review=REVIEWS[d.id];sims[d.id]=makeSim(d);});

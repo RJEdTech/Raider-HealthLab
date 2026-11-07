@@ -24,6 +24,7 @@ BioLab.register(SIM);
 | `card` | One sentence for the home card. Say what students do, not what the page is. |
 | `kind` | Card badge: `'Simulation'`, `'Virtual lab'`, `'Learning tool'`, `'Lab skills'`, `'Process walkthrough'` or `'Go further'`. |
 | `title` | Page heading. |
+| `skills` | The math skill and course, as a string or `{bio,honors,ap}`: `'Percent change and weighted averages · Algebra 1'`. Shown at the top of the page, at every level, as "The math: …". Optional; nothing renders without it. |
 | `lede` | `{bio,honors,ap}` sentence under the title. Every level-aware text field accepts either a string or `{bio,honors,ap}`; the highest level ≤ the current one wins. |
 | `scale` | One line answering "where am I and how big is this?" Give real units ("one red blood cell, about 8 µm across"). |
 | `aspect` | Stage aspect ratio (default 16/9). The stage is always 800 logical px wide, so its height is 800/aspect. |
@@ -39,7 +40,7 @@ BioLab.register(SIM);
 | `defaultGraph` | The graph id selected by default. |
 | `graph:false`, `trials:false` | Hide the graph panel or the data table, for tools where they make no sense. |
 | `infoPanel(sim)` | Returns HTML for an info panel (e.g. "the organelle you clicked"). It re-renders when `sim.infoDirty=true`. `bindInfo(sim,el)` can attach listeners. |
-| `challenges` | An array, or a function `(sim)=>array`, of `{lvl,q,choices,correct,baseline,baselineAction,change,changeAction,changeText,watch,at,reveal,explain,instant}`. Timed challenges reset to defaults+`baseline`, apply `change` at `at` (default `chChange`), and reveal at `reveal` (default `chReveal`), in sim time. `instant:true` grades immediately, for quizzes. `onChallenge(sim,ch,phase)` lets a quiz set up its prompt (e.g. highlight a structure). |
+| `challenges` | An array, or a function `(sim)=>array`, of `{lvl,q,choices,correct,baseline,baselineAction,change,changeAction,changeText,watch,at,reveal,explain,instant}`, or number challenges `{kind:'num',lvl,q,answer,tol,unit,d,hint,explain}` (see below). Timed challenges reset to defaults+`baseline`, apply `change` at `at` (default `chChange`), and reveal at `reveal` (default `chReveal`), in sim time. `instant:true` grades immediately, for quizzes. `onChallenge(sim,ch,phase)` lets a quiz set up its prompt (e.g. highlight a structure). |
 | `chChange`, `chReveal` | Default timing for timed challenges. |
 | `narrate(sim)` | **Required.** Returns one or two plain sentences (HTML allowed, `<b>` for the key idea) on what is happening right now and **why**. Make it state-specific, so it changes as the variables change. It is the main tool against abstraction. |
 | `tour` | **Required for process sims.** A guided walkthrough: `[{lvl,title,text,focus:[x,y,w,h] or [[...],[...]] or (sim)=>rect,speed,pause,setup(sim)}]`. Everything outside `focus` is dimmed. Run the step slowly (`speed` 0.1–0.5) so students see each event. `setup` can change values with `BioLab.setValues(sim,{...})` or call `BioLab.reset(sim)`. `onTourExit(sim)` restores state. Aim for 5–8 steps that tell the process in order. |
@@ -50,13 +51,42 @@ BioLab.register(SIM);
 | `onClick(sim,x,y)` | Stage click, in logical coordinates. Every click interaction also needs a control or action equivalent, for keyboard users. |
 | `thumbSetup(sim)`, `thumbFrames` | Optional, to make the home-page thumbnail look good. |
 
+## Skills, "Your turn", the formula and number challenges (Nov 7, 2026)
+These four additions are opt-in. A tool that does not use them behaves exactly as before, except that the Guided reveal card now also shows `gut.how` (item 3).
+
+1. **`skills`** (see the table): one line, "The math: <skill> · <course>", at the top of the page.
+2. **`gut.calc`: the student works it out.** In Guided the order becomes: question, gut, **Your turn**, walkthrough, reveal, test yourself. In Full lab the calculation sits in step 2 of the gut box, after the lock and before "Show me the math".
+```js
+gut:{ ...,
+ hint:'level text',   // optional: replaces the line under the gut prompt. Default with calc: "Lock your gut answer, then you will work it out yourself."
+                      // Default without calc (unchanged): "No math yet. Go with what feels right. ..."
+ calc:{
+  prompt: 'text' | (sim)=>'text' | {bio,honors,ap} (each a string or a function of sim),  // give every number the student needs
+  answer: (sim)=>number,                  // the right answer for the scene on screen
+  tol: number | (answer)=>number,         // accepted error (default 1% of the answer)
+  unit: '$' | '%' | 'minutes' ...,        // '$' prefixes, '%' suffixes, anything else follows the number
+  d: 2,                                   // optional: decimals when the engine shows a number
+  steps: (sim)=>'html' | (sim)=>['step 1','step 2',...],   // worked steps with the case's numbers; must show the answer
+  hint: 'level text',                     // optional: shown after a wrong try
+  after: 'lock' | 'tour',                 // optional: 'lock' (default) right after the gut; 'tour' after the walkthrough, just before the reveal
+  nextLabel: 'text'                       // optional: the Continue button
+ },
+ formula: (sim)=>'html'                   // optional: the formula with this case's numbers, shown as a math line in the reveal
+}
+```
+   - The input accepts `1,250`, `$1,250`, `12%`, `−3`. **Check** says whether the answer is within `tol`, then shows the steps and the correct value. A miss gets one more try (with `calc.hint`); the second miss, or **Show me**, shows the steps. The student is never blocked.
+   - The result is kept in `sim.ui.calc = {value, correct, answer, done, tries}` (value is `null` if they asked to be shown). `gut.compare(sim,g,m)` can read it; the reveal card already adds "Your calculation: …, right / not quite".
+   - **Don't give the answer away.** While `BioLab.calcPending(sim)` is true (gut locked, calculation not yet checked or shown), `draw()` and metrics must hide the number the student is computing. With `after:'lock'`, the walkthrough comes after the calculation, so it may show the answer; with `after:'tour'`, make sure the tour does not state it.
+3. **The reveal shows the math.** After `compare()`, the Guided reveal card shows `gut.formula(sim)` as a math line ("The math, with these numbers"), or, if there is no `formula`, `gut.how` as "How the math did it". The Full-lab gut box also shows `formula` under `how` once the math has run.
+4. **Number challenges.** `{kind:'num', lvl, q, answer:(sim)=>number or a number, tol, unit, d, hint, explain}` renders a number input and **Check** in place of the choices. `q` may be a function of sim. Right within `tol` is "Correct."; a miss gets one more try with the hint, then the answer and `explain`. They mix freely with multiple-choice challenges and count toward the 2-per-level rule. In Guided, "test yourself" says "quick questions" when any are numeric.
+
 ## Helpers (`BioLab.h`)
 - **Drawing:** `rr` (rounded-rect path), `txt(ctx,s,x,y,{s,w,c,a,b})`, `pill(ctx,label,x,y,bg,fg,size)`, `polyline(points).at(distance)`.
 - **Math and formatting:** `clamp`, `lerp`, `rng(seed)`, `randn()`, `binom(n,p)`, `fmtNum`.
 - **Level:** `atLeast('honors')`, `lvText(levelObj)`.
 - **Graphs:** `axes`, `bars(ctx,ax,values,{colors,labels,d})`, `legend(ctx,x,y,[{label,color,dash}])`, `serColor(i)`.
 
-`BioLab.setValues(sim,{id:value})` updates the controls too. `BioLab.reset(sim)` resets the sim. `BioLab.refresh(sim)` redraws the readouts and graph.
+`BioLab.calcPending(sim)` is true while a `gut.calc` answer is still to be worked out (see above). `BioLab.setValues(sim,{id:value})` updates the controls too. `BioLab.reset(sim)` resets the sim. `BioLab.refresh(sim)` redraws the readouts and graph.
 
 ## Colors (theme-aware; read from `PAL[...]` every frame)
 - **Backgrounds and ink:** `cv-bg`, `cv-bg2`, `card`, `card2`, `cv-ink` (labels), `cv-soft` (secondary labels), `line`, `muted`.
@@ -75,6 +105,8 @@ BioLab.register(SIM);
 
 ## Testing
 `NODE_PATH=$(npm root -g) node /home/claude/biolab-test/harness.js <hash> [...]` prints a JSON report. It covers errors, NaN readouts, sweeps of every control and action, every challenge answered correctly at every level (each verdict must be "Your prediction held up." or "Correct."), and the walkthrough steps. Screenshots go to `/home/claude/biolab-test/out/<hash>/`. Look at the screenshots: `desk-ap.png`, `desk-dark.png`, `phone-dark.png`, `tour-step2.png`.
+
+On MathLab, HealthLab, AILab and CivicsLab, use `LAB_ROOT=<repo> LAB_OUT=<out> node /home/claude/labtest/harness.js <id> [...]`. For a tool with `gut.calc` it also checks that `calc.answer` is a finite number at every level and in five fresh scenarios (`gut.again`), that `calc.steps` shows that number, that `gut.formula` has no NaN, and it runs the Guided flow (lock, Your turn right and wrong-twice, walkthrough, reveal, the first number challenge) at all three levels and on a phone. Read `desk-guided-calc.png`, `desk-guided-reveal.png`, `desk-guided-num.png`, `phone-guided-calc.png` and `phone-guided-reveal.png`. It also checks that every `num` challenge has a finite answer.
 
 ## Course pathways
 `courses.js` lists each RJ course's units in teaching order with tool ids (owned by the lead; builders don't edit it). The course sequences come from Canvas; see the build notes.
