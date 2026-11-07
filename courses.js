@@ -3,7 +3,7 @@ BioLab.COURSES = [
  {id:'health',name:'Health',blurb:'RJ Health (boys’ and girls’ divisions), in the order most sections cover it. Sleep is not its own unit in Canvas, so the sleep tools sit with stress and the brain, where they fit best.',
   units:[
    {n:'Unit 1',t:'Introduction to health: the Health Triangle and SMART goals',ids:['screentime']},
-   {n:'Unit 2',t:'Nutrition: labels, fad diets and supplements',ids:['checkclaim']},
+   {n:'Unit 2',t:'Nutrition: labels, fad diets and supplements',ids:['checkclaim','fooddesert']},
    {n:'Unit 3',t:'Reproductive system and hormone regulation',ids:['feedback']},
    {n:'Unit 4',t:'The brain and nervous system',ids:['scroll','feedback']},
    {n:'Unit 5',t:'Emotions, stress and sleep',ids:['sleepdebt','watchlie','caffeinecurve']},
