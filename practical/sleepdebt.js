@@ -7,6 +7,6 @@ sleepdebt:{
   'National health tracking: the CDC’s Youth Risk Behavior Survey uses 8 hours as its benchmark for high schoolers. In 2023, 76.8% of US high school students fell short of it on an average school night, up from 68.9% in 2007.',
   'Your own calendar: when a late game, a shift at work or a big test lands on a school night, this is the math of what it costs. Moving one bedtime 30 minutes earlier on all five school nights is worth 2 h 30 min a week.'
  ],
- takeaway:'Sleep debt adds up night by night. Weekend sleep-ins pay back only part of it and push your body clock later, so the school-night schedule is where the real fix is.'
+ takeaway:'Sleep debt adds up night by night: minutes short × 5 school nights. In this model, weekend sleep-ins pay back only part of it and move the sleep midpoint later, while the school-night times set the weekly shortfall.'
 }
 });

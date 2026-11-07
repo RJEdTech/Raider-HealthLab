@@ -5,7 +5,7 @@ screentime:{
  uses:[
   'The U.S. Surgeon General’s 2023 advisory reports that up to 95% of 13- to 17-year-olds use social media, and more than a third say they use it “almost constantly.” Your own week is one data point in that picture.',
   'Under the Colorado-led settlement with Meta (August 26, 2026), teen accounts get a 2-hour daily limit with pauses, a block from midnight to 6 a.m., and notifications muted during the school day. Your “days over 2 hours” shows what that limit would mean for you.',
-  'A SMART goal needs a number to track. Your median day, your busiest day or your minutes after 10 p.m. turns “I should use my phone less” into a goal you can actually measure next week.'
+  'A SMART goal needs a number to track. Your median day, your busiest day or your minutes after 10 p.m. turns a general aim into a goal you can measure next week, whatever goal you choose.'
  ],
  takeaway:'Your screen-time report is data. The median shows your typical day, the range shows how much your days swing, and a rate like notifications per hour shows how often your phone asks for you.'
 }

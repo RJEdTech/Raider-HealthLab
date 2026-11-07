@@ -18,7 +18,7 @@ whosad:{
   {id:'ab',kind:'test',lvl:'honors',
    q:'An A/B test of the energy drink ad: version A (plain) gets 185 clicks per 1,000 users, version B (a late-night message) gets 245. Clicks from late-night or stress-search users go from 148 to 217. How many more clicks per 1,000 does B get from those users?',
    num:{ans:69,tol:1,unit:'clicks'},
-   steps:['Late-night or stress-search users: 217 − 148 = 69 more clicks per 1,000.','Everyone else: 37 → 28, so 9 fewer.','B wins by 60 overall, and all of the gain comes from the users having the hardest week. The test keeps B because it only counts clicks.']},
+   steps:['Late-night or stress-search users: 217 − 148 = 69 more clicks per 1,000.','Everyone else: 37 → 28, so 9 fewer.','B wins by 60 overall, and all of the gain comes from users with late-night or stress-search signals. The test keeps B because it only counts clicks.']},
   {id:'crowd',kind:'real',lvl:'honors',
    q:'In the crowd of 1,000 fictional users, how many are shown the vape-style ad and read as under 21 (a known minor or a likely teen)?',
    num:{ans:56,tol:0,unit:'people'},

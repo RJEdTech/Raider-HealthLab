@@ -38,7 +38,13 @@ function popStats(sim){const law=atLeast('honors')&&sim.p.law;const c={energy:0,
 let PS=null,PSkey='';const pop=sim=>{const k=String(atLeast('honors')&&sim.p.law);if(k!==PSkey){PS=popStats(sim);PSkey=k;}return PS;};
 function abTest(sim){const ad=sim.p.ad;let A=0,B=0,Av=0,Bv=0;POP.forEach(P=>{const a=sig(zOf(P,ad,'A')),b=sig(zOf(P,ad,'B'));A+=a;B+=b;if(P.late>=1||P.search==='stress'){Av+=a;Bv+=b;}});return {A,B,Av,Bv};}
 const GS=sim=>(sim.tour&&sim.tour.on)?null:sim.gutS;
-const shownW=sim=>!!(sim.p.reveal||(GS(sim)&&GS(sim).g));
+const pend=sim=>!!(BioLab.calcPending&&BioLab.calcPending(sim));
+/* The points stay hidden while the student works out "Your turn". */
+const shownW=sim=>!pend(sim)&&!!(sim.p.reveal||(GS(sim)&&GS(sim).g));
+const r2=v=>Math.round(v*100)/100;
+/* One signal's points: the two click chances to two decimals, and their difference */
+function pts(sim,s){const P=prof(sim),Q=Object.assign({},P,{[s]:NEUTRAL[s]}),ad=sim.p.ad,a=r2(pClick(P,ad)),b=r2(pClick(Q,ad));return {a,b,d:r2(a-b),zP:zOf(P,ad),zQ:zOf(Q,ad)};}
+const ptxt=v=>fmtNum(v,2),p1=v=>fmtNum(v,1);
 const adL=id=>ADS.find(a=>a.id===id).l,sigL=id=>SIG.find(s=>s.id===id).l;
 const f1=v=>fmtNum(v,1),pct=v=>fmtNum(v,0)+'%';
 function clearGut(sim){if(sim.gutS&&(sim.gutS.g||sim.gutS.m)){sim.gutS.g=null;sim.gutS.m=null;if(BioLab.gutRender)BioLab.gutRender(sim);}}
@@ -53,9 +59,10 @@ function icon(ctx,id,x,y,k){ctx.save();ctx.lineWidth=2;ctx.strokeStyle=PAL['cv-i
 
 const SIM={
  id:'whosad',hash:'whosad',apUnit:4,order:1,tab:'Who is this ad for?',kind:'Simulation',next:['checkclaim'],
+ skills:{bio:'Percentage points: how much one signal adds, and what that means per 1,000 people · Health (Unit 7: Substances: caffeine, alcohol, nicotine), Algebra 1 (Unit 2: proportions)',honors:'Percentage points, proxies and A/B tests · Health (Unit 7: Substances), Statistics (Unit 3: collecting data)',ap:'The logistic function P = 1/(1 + e^(−z)) · Health (Unit 7: Substances), Algebra 2 (Unit 5: exponential functions)'},
  card:'Build a fictional teen’s profile and watch a toy ad model score them for an energy drink, a vape-style product and a study app.',
  title:'Who is this ad for? How ad models score people',
- lede:{bio:'An ad model never meets you. It reads signals: how late you are online, what you search, who you follow, where your phone goes. Then it scores how likely you are to click. Some of those signals stand in for a hard week.',
+ lede:{bio:'An ad model never meets you. It reads signals: how late you are online, what you search, who you follow, where your phone goes. Then it scores how likely you are to click: it adds a number for each signal and turns the total into a chance. Some of those signals stand in for a hard week.',
   honors:'Targeting models are trained on clicks, so they learn whatever predicts a click, including signals that stand in for stress or vulnerability. A/B testing then keeps whichever version of an ad gets more clicks, whoever is clicking.',
   ap:'This toy model is a logistic regression: z = b + Σ wᵢxᵢ and P(click) = 1/(1 + e^(−z)). A signal’s effect in points depends on the rest of the profile, because the curve is steepest near 50%.'},
  scale:'One fictional profile, three generic ads, and a crowd of 1,000 fictional users. All weights are invented for illustration. Nothing you set here leaves your browser.',
@@ -101,7 +108,8 @@ const SIM={
    const lab=show?(d>=0.05?'+'+f1(d):(d<=-0.05?'−'+f1(-d):'0'))+(big?'':' pts'):'?';
    pill(ctx,lab,big?284:280,y+14*ks,show?(s.id===top?PAL['rj']:PAL['cv-soft']):PAL['line'],show?'#fff':PAL['cv-ink'],12*ks);
    if(s.id===pk&&!big)txt(ctx,'Your gut',316,y+44,{s:12,w:700,c:PAL['s4'],a:'right'});});
-  if(!show&&!big)txt(ctx,'Lock in your gut to see the points',24,436,{s:12*k,c:PAL['cv-soft']});
+  if(!show&&!big)txt(ctx,pend(sim)?'Work out your signal’s points first':'Lock in your gut to see the points',24,436,{s:12*k,c:PAL['cv-soft']});
+  else if(!big&&G&&G.m){const q=pts(sim,G.m.pick);txt(ctx,`${SIG.find(x=>x.id===G.m.pick).sh}: ${ptxt(q.a)}% − ${ptxt(q.b)}% = ${p1(q.d)} pts ≈ ${Math.round(q.d*10)} per 1,000`,20,436,{s:12,w:700,c:PAL['rj']});}
   else if(!big)txt(ctx,'Points: how far the score drops if the model can’t see it',20,436,{s:12,c:PAL['cv-soft']});
   /* the three ads */
   const cw=140,cx0=356;txt(ctx,big?'Click scores':'Toy model: chance this profile clicks',cx0,26,{s:13*k,w:700});
@@ -123,13 +131,25 @@ const SIM={
  narrate(sim){const P=prof(sim),ad=sim.p.ad,p=pClick(P,ad),w=winner(P),t=topSig(sim);
   if(blocked(sim,P))return `This user is a known minor who has not given consent, so under Colorado’s SB24-041 the platform may not use their data for targeted ads. <b>The model can still compute a score; the law says it may not use it for targeting.</b>`;
   const vul=(P.late>=1||P.search==='stress');
+  if(pend(sim)){const q=pts(sim,sim.gutS.g.pick);return `Your pick is locked: ${sigL(sim.gutS.g.pick).toLowerCase()}. With it the ${adL(ad).toLowerCase()} score is ${ptxt(q.a)}%; without it, ${ptxt(q.b)}%. <b>Work out how many points it adds.</b>`;}
   if(!shownW(sim))return `The model gives this profile a ${pct(p)} chance of clicking the ${adL(ad).toLowerCase()} ad, and shows them the ${adL(w).toLowerCase()} ad. <b>Which signal do you think is doing the most work?</b>`;
-  return `${sigL(t.id)} adds ${f1(t.v)} points to the ${adL(ad).toLowerCase()} score, more than any other signal. `+(vul&&(t.id==='late'||t.id==='search')?`<b>The model never asked whether this person is stressed or tired. It learned that those signals predict clicks.</b>`:`<b>The model ranks people by clicks, not by what is good for them.</b>`);},
+  return `${sigL(t.id)} adds ${f1(t.v)} points to the ${adL(ad).toLowerCase()} score, more than any other signal. `+(vul&&(t.id==='late'||t.id==='search')?`<b>The model never asked whether this person is stressed or tired. It learned that those signals predict clicks.</b>`:`<b>The score counts predicted clicks; nothing else about the person enters it.</b>`);},
  gut:{better:'higher',controls:['pick'],
   ask:{bio:'Look at the profile on the left and the ad outlined in red. Pick the one signal here that you think pushes that ad’s click score up the most. Then lock it in.',
    honors:'For the ad being scored, pick the signal you think adds the most points to its click score, then lock it in.'},
   lock(sim){const v=drop(sim,sim.p.pick);return {v,pick:sim.p.pick,label:`${sigL(sim.p.pick)}: adds ${f1(v)} points`};},
   solve(sim){const t=topSig(sim);sim.p.pick=t.id;return {v:t.v,pick:t.id,label:`${sigL(t.id)}: adds ${f1(t.v)} points`};},
+  hint:{bio:'Lock in your pick. Then you will work out how many points your signal adds.'},
+  calc:{unit:'points',d:1,tol:0.15,
+   prompt:{bio:sim=>{const g=sim.gutS&&sim.gutS.g?sim.gutS.g.pick:sim.p.pick,q=pts(sim,g),ad=adL(sim.p.ad).toLowerCase();return `You picked: <b>${sigL(g)}</b>. With it, the model gives this profile a <b>${ptxt(q.a)}%</b> chance of clicking the ${ad} ad. With that signal taken away, the chance is <b>${ptxt(q.b)}%</b>. How many percentage points does your signal add?`;},
+    ap:sim=>{const g=sim.gutS&&sim.gutS.g?sim.gutS.g.pick:sim.p.pick,q=pts(sim,g),m=v=>(v<0?'−':'')+fmtNum(Math.abs(v),3);return `You picked: <b>${sigL(g)}</b>. With it, z = ${m(q.zP)}; without it, z = ${m(q.zQ)}. Use P = 1/(1 + e^(−z)) for each, as a percent, and subtract. How many points does the signal add?`;}},
+   answer:sim=>{const g=sim.gutS&&sim.gutS.g?sim.gutS.g.pick:sim.p.pick;return pts(sim,g).d;},
+   hint:'Subtract the chance without the signal from the chance with it. The answer is in percentage points.',
+   steps(sim){const g=sim.gutS&&sim.gutS.g?sim.gutS.g.pick:sim.p.pick,q=pts(sim,g),out=[];
+    if(atLeast('ap'))out.push(`P = 1/(1 + e^(${fmtNum(-q.zP,3).replace('-','−')})) = ${ptxt(q.a)}%, and without the signal P = 1/(1 + e^(${fmtNum(-q.zQ,3).replace('-','−')})) = ${ptxt(q.b)}%.`);
+    out.push(`${ptxt(q.a)}% − ${ptxt(q.b)}% = <b>${ptxt(q.d)}</b> percentage points, about ${p1(q.d)}.`);
+    out.push(`Per 1,000 profiles like this: ${ptxt(q.d)}% of 1,000 = about ${Math.round(q.d*10)} clicks from that one signal.`);return out;}},
+  formula(sim){const t=topSig(sim).id,q=pts(sim,t);return `${sigL(t)}: ${ptxt(q.a)}% − ${ptxt(q.b)}% = ${ptxt(q.d)} points, so about ${ptxt(q.d)} × 10 ≈ ${Math.round(q.d*10)} clicks per 1,000 profiles`+(atLeast('ap')?`<br>z = ${fmtNum(q.zP,3).replace('-','−')} with it, ${fmtNum(q.zQ,3).replace('-','−')} without; P = 1/(1 + e^(−z))`:'');},
   how:{bio:'The model takes each signal away, one at a time, and recomputes the score. The signal whose removal drops the score the most is the one doing the most work.',
    ap:'For each signal, set it to its neutral value, recompute P = 1/(1 + e^(−z)) and subtract. Because the logistic curve bends, the same weight adds more points when z is near 0 (P near 50%).'},
   compare(sim,g,m){const ad=adL(sim.p.ad).toLowerCase(),per=v=>Math.round(v*10);
@@ -138,10 +158,11 @@ const SIM={
   again(sim){const R=a=>a[Math.floor(Math.random()*a.length)];sim.p.ad=R(['energy','vape','study']);sim.p.age=R(['known','teen','adult']);sim.p.late=R([0,0.5,1,1.5,2,2.5,3]);sim.p.search=R(['none','stress','study','sports']);sim.p.follow=R(['friends','gaming','party','fitness']);sim.p.place=R(['home','store','gym','library']);sim.p.pick='age';sim.p.reveal=false;}
  },
  challenges:[
+  {lvl:'bio',kind:'num',q:'An ad model gives a profile a 22.4% chance of clicking an ad. Without the profile’s late-night signal, the chance is 13.9%. Out of 1,000 profiles like this, about how many clicks does that one signal add?',answer:85,tol:1,unit:'clicks',d:0,hint:'Subtract to get percentage points. Then find that percent of 1,000.',explain:'22.4% − 13.9% = 8.5 percentage points. 8.5% of 1,000 = 85 clicks.'},
   {lvl:'bio',instant:true,q:'The model has never been told anyone’s mood. How can it still end up favoring people who are stressed?',choices:['It can’t: without a mood setting it ignores stress','It learns from clicks, and signals like late-night use and “can’t sleep” searches go with clicking','Stressed people are shown the study app on purpose'],correct:1,explain:'A click model learns whatever predicts clicks. In this toy model, late nights and stress searches raise the energy drink and vape-style scores, so the model favors them without anyone choosing to target stress. That is what “stand in for” means.'},
-  {lvl:'bio',instant:true,q:'Default profile: a known 16-year-old, online 1.5 hours after midnight, searching about stress and sleep, following gaming streams. Which ad wins this person’s ad slot?',choices:['The study app','The energy drink','The vape-style product'],correct:1,explain:'The model shows the ad with the highest click score: energy drink 28%, vape-style 25%, study app 18%. Nothing in the model asks whether the ad is good for a tired 16-year-old.'},
+  {lvl:'bio',instant:true,q:'Default profile: a known 16-year-old, online 1.5 hours after midnight, searching about stress and sleep, following gaming streams. Which ad wins this person’s ad slot?',choices:['The study app','The energy drink','The vape-style product'],correct:1,explain:'The model shows the ad with the highest click score: energy drink 28%, vape-style 25%, study app 18%. Nothing in the score measures anything except the predicted chance of a click.'},
   {lvl:'honors',instant:true,q:'An A/B test shows half the users a plain ad (A) and half a late-night message (B), then keeps the one with more clicks. What does the test measure?',choices:['Which ad is better for the people who see it','Which ad gets more clicks, whoever is clicking','Whether the ad is legal'],correct:1,explain:'For the energy drink, B wins 245 to 185 clicks per 1,000. Clicks from late-night or stress-search users rise from 148 to 217, while clicks from everyone else fall from 37 to 28. The test keeps B because the total went up.'},
-  {lvl:'honors',instant:true,q:'Colorado’s SB24-041 is turned on. A user the platform knows is 16 has not given consent. What changes?',choices:['Nothing: the law only covers tobacco sales','The platform may not use their data for targeted ads without consent','The user is banned from the app'],correct:1,explain:'SB24-041 amends the Colorado Privacy Act: without consent, a business may not process a known minor’s data for targeted advertising, sale or certain profiling. In the crowd, the known minors get an untargeted ad instead.'},
+  {lvl:'honors',kind:'num',q:'In the energy drink A/B test, version B gets 60 more clicks per 1,000 users than version A. Users with late nights or stress searches give B 69 more clicks than A. How many clicks per 1,000 does B lose among everyone else?',answer:9,tol:0,unit:'clicks',d:0,hint:'The total change is the change from late-night or stress users plus the change from everyone else.',explain:'60 = 69 + (change from everyone else), so everyone else changes by 60 − 69 = −9: B loses 9 clicks there (37 → 28). All of B’s gain, and more, comes from users with late-night or stress-search signals.'},
   {lvl:'ap',instant:true,q:'Two profiles both gain +0.5 to z from late nights. One starts at z = −3 (P ≈ 4.7%), the other at z = 0 (P = 50%). Which gains more points?',choices:['The z = −3 profile','The z = 0 profile','Both gain the same'],correct:1,explain:'P(−2.5) − P(−3) ≈ 7.6% − 4.7% = 2.8 points, but P(0.5) − P(0) ≈ 62.2% − 50% = 12.2 points. The logistic curve is steepest at 50%, so the same weight moves the score most there.'},
   {lvl:'ap',instant:true,q:'For the vape-style ad, the default profile has z = −1.125. If the stress searches are removed (−0.9), about what is the new click chance?',choices:['About 11.7%','About 24.5%','About 4%','About 30%'],correct:0,explain:'z goes from −1.125 to −2.025. P = 1/(1 + e^2.025) ≈ 0.117, down from 0.245: a 12.8-point drop from one kind of search.'}
  ],
@@ -156,7 +177,7 @@ const SIM={
  ],
  onTourExit(sim){BioLab.setValues(sim,{ad:'energy',age:'known',late:1.5,search:'stress',follow:'gaming',place:'home',reveal:false,law:false});},
  lab:{bio:'<p><b>Question:</b> Which signals does the model lean on, and for which ads?</p><ol><li>Turn on <b>Show how much each signal adds</b>.</li><li>For each ad, record which signal adds the most points.</li><li>Set late-night use to 0 and searches to Nothing notable. Record all three scores again.</li></ol><p>Write one sentence: which of these signals could stand in for a hard week?</p>',
-  honors:'<p><b>Question:</b> What does an A/B test reward?</p><ol><li>For each ad, record the A/B result: total clicks for A and B, and clicks from late-night or stress-search users.</li><li>Turn on SB24-041 and record how the crowd changes.</li></ol><p>Explain why a test that only counts clicks can pick the version that works best on people at a vulnerable moment.</p>',
+  honors:'<p><b>Question:</b> What does an A/B test reward?</p><ol><li>For each ad, record the A/B result: total clicks for A and B, and clicks from late-night or stress-search users.</li><li>Turn on SB24-041 and record how the crowd changes.</li></ol><p>Which users account for version B’s win? Write what a test that counts only clicks measures, and one thing it leaves out.</p>',
   ap:'<p><b>Question:</b> Why does the same weight add different points to different profiles?</p><ol><li>Pick one signal. Record its points for five profiles with different starting scores.</li><li>Plot points added against the starting score.</li></ol><p><b>CER:</b> Use the slope of P = 1/(1 + e^(−z)), which is P(1 − P), to explain your graph.</p>'},
  terms:[
   {t:'Targeted advertising',d:'Choosing which ad to show a person based on a profile built from their data.'},

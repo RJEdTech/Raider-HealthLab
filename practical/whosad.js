@@ -7,6 +7,6 @@ whosad:{
   'A/B testing: companies routinely show two versions of an ad or a page to random groups and keep the one that gets more clicks. The test counts clicks. It does not ask who clicked or whether the ad was good for them.',
   'The rules: Colorado’s SB24-041 (in force October 1, 2025) requires consent before a business uses a known minor’s data for targeted ads, sale or profiling, and bans design features that significantly increase or extend a minor’s use. Federal Tobacco 21 (December 2019) set 21 as the minimum age to buy tobacco and e-cigarettes.'
  ],
- takeaway:'Ad models rank people by their chance of clicking. Signals like late nights and stress searches stand in for a hard week, so a model trained only on clicks can aim at people when they are most vulnerable.'
+ takeaway:'An ad model adds up points for each signal and ranks people by their chance of clicking. In this model, late nights and stress searches add the most to the energy drink and vape-style scores, so a model trained only on clicks favors profiles that look like a hard week.'
 }
 });

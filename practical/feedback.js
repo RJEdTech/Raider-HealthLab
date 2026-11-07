@@ -7,6 +7,6 @@ feedback:{
   'Thermostats and cruise control: both measure the gap from a set point and push back. A thermostat that reacts too hard, or too late, makes a room swing between too hot and too cold.',
   'Your feed: a recommendation system that shows you more of what you watch is a positive loop. A phone’s daily app limit is a stopping rule you choose: a negative loop. Cathy O’Neil’s <i>Weapons of Math Destruction</i> argues that harmful algorithms run on feedback loops like these.'
  ],
- takeaway:'Negative feedback opposes a change and returns to a set point; positive feedback amplifies a change until something ends it. When the response lands late, push back firmly, but not as hard as you can.'
+ takeaway:'Negative feedback opposes a change and returns to a set point; positive feedback amplifies a change until something ends it. When the response lands late, the fastest gain is firm but not the strongest: too much push overshoots.'
 }
 });

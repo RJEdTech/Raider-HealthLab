@@ -7,6 +7,6 @@ herd:{
   'Tracking outbreaks: CDC says measles was eliminated in the U.S. in 2000, meaning no continuous spread inside the country. U.S. cases went from 285 in 2024 (89% unvaccinated or of unknown status, 40% hospitalized) to 2,289 in 2025 to 5,182 in 2026 as of November 5, with 4 deaths. Canada lost its elimination status in November 2025. Public health workers use the threshold to see where coverage has slipped below it.',
   'Lives saved: WHO-led modeling published in The Lancet in 2024 credits 50 years of immunization with about 154 million lives saved, 101 million of them infants, with measles vaccination accounting for 60% of them.'
  ],
- takeaway:'Measles stops spreading only when each case infects fewer than one other person, which takes about 96% coverage with two doses. Below that, small drops cause big outbreaks. Your own vaccination is part of a community number that protects babies and people who cannot be vaccinated. Check your two-dose MMR status with a parent or the school nurse.'
+ takeaway:'Measles stops spreading only when each case infects fewer than one other person, which takes about 96% coverage with two doses. Below that, in this model, small drops cause big outbreaks. Each two-dose student is part of the coverage that protects babies and people who cannot be vaccinated. The school nurse keeps immunization records.'
 }
 });

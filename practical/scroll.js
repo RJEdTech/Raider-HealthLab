@@ -7,6 +7,6 @@ scroll:{
   'Likes on posts: Sherman and colleagues (2016) scanned 32 teens ages 13 to 18. The nucleus accumbens, a reward area, was more active when photos showed many likes, and teens were more likely to like photos that already had many likes.',
   'Stopping points from outside: under the Colorado-led settlement with Meta (August 26, 2026), teen accounts get a 2-hour daily limit with pauses and a midnight to 6 a.m. block. A stopping point you set ahead of time does not depend on noticing that the feed has gone dry.'
  ],
- takeaway:'Rewards you can’t predict keep you pulling longest, because an empty pull doesn’t look like the end. Decide your stopping point before you start.'
+ takeaway:'Rewards you can’t predict keep the pulling going longest, because an empty pull doesn’t look like the end. In this model the quit point is patience × the longest empty run seen while rewards came, so a random schedule pushes it far out.'
 }
 });

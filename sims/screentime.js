@@ -29,7 +29,14 @@ function stats(sim){const D=data(sim),mins=vals(sim,'min'),n=mins.length;
  return {n,total:mins.reduce((s,x)=>s+x,0),mean:mean(mins),median:median(mins),range:n?Math.max(...mins)-Math.min(...mins):null,bi,
   pick:mean(pick),notif:mean(notif),late:late.reduce((s,x)=>s+x,0),lateN:late.length,sd:sd(mins),
   over:mins.filter(x=>x>LIMIT).length,overMin:mins.reduce((s,x)=>s+Math.max(0,x-LIMIT),0)};}
-const shown=sim=>!!((sim.tour&&sim.tour.on)||(sim.st&&sim.st.shown)||(sim.gutS&&sim.gutS.g));
+const pend=sim=>!!(BioLab.calcPending&&BioLab.calcPending(sim));
+/* While the student adds up the week ("Your turn"), the totals stay hidden. */
+const shown=sim=>!!((sim.tour&&sim.tour.on)||(sim.st&&sim.st.shown&&!pend(sim))||(sim.gutS&&sim.gutS.g&&!pend(sim)));
+const fc=v=>Math.round(v).toLocaleString('en-US');
+const dayMins=sim=>data(sim).map((d,i)=>({i,m:d.min})).filter(x=>x.m!==null&&x.m!==undefined&&x.m!==''&&isFinite(x.m)).map(x=>({i:x.i,m:+x.m}));
+const sumLine=sim=>dayMins(sim).map(x=>fc(x.m)).join(' + ');
+const calcAns=sim=>Math.round(stats(sim).total/60*100)/100;
+function medLine(sim){const a=dayMins(sim).map(x=>x.m).sort((x,y)=>x-y),n=a.length;if(!n)return '';const med=median(a);return n%2?`median ${fc(med)} min (number ${(n+1)/2} of ${n} in order)`:`median ${fmtNum(med,1)} min (the average of numbers ${n/2} and ${n/2+1} of ${n})`;}
 const GS=sim=>(sim.tour&&sim.tour.on)?null:sim.gutS;
 const clearGut=sim=>{if(BioLab.gutClear)BioLab.gutClear(sim);};
 const gate=(sim,v)=>shown(sim)&&v!==null&&v!==undefined&&isFinite(v)?v:null;
@@ -79,6 +86,7 @@ function toCSV(sim){const D=data(sim),s=stats(sim);const rows=[['Day','Screen ti
 
 const SIM={
  id:'screentime',hash:'screentime',apUnit:2,order:3,tab:'My Screen Time, Analyzed',kind:'Learning tool',
+ skills:{bio:'Totals, mean, median and range · Health (Unit 1: SMART goals; Unit 6: Screen time and social media), Statistics (Unit 1: one-variable data)',honors:'Mean vs. median, and a rate per hour · Health (Unit 1: SMART goals; Unit 6: Screen time and social media), Statistics (Unit 1)',ap:'Standard deviation and correlation r · Health (Unit 6: Screen time and social media), AP Statistics (Units 1 and 2)'},
  card:'Type in a week of your own screen-time numbers (they never leave your browser), guess your totals, then see the mean, median, range and what a notification-free night would cut.',
  title:'My Screen Time, analyzed',
  lede:{bio:'Your phone already counts your screen time, pickups and notifications. Here you turn one week of those numbers into a few you can actually use: your total, your typical day, your busiest day and your late nights. What you type stays in this browser tab.',
@@ -102,14 +110,14 @@ const SIM={
   {id:'mean',label:'Mean per day',unit:'min',d:0,min:0,max:600,get:sim=>gate(sim,stats(sim).mean)},
   {id:'median',label:'Median per day',unit:'min',d:0,min:0,max:600,get:sim=>gate(sim,stats(sim).median)},
   {id:'range',label:'Range (busiest − quietest)',unit:'min',d:0,min:0,max:600,get:sim=>gate(sim,stats(sim).range)},
-  {id:'busiest',label:'Busiest day',text:true,get:sim=>{const s=stats(sim);return !shown(sim)?'Lock in your guess to see':s.bi<0?'No days entered yet':`${DAYL[s.bi]}: ${hm(data(sim)[s.bi].min)}`;}},
+  {id:'busiest',label:'Busiest day',text:true,get:sim=>{const s=stats(sim);return !shown(sim)?(pend(sim)?'Add up your week first':'Lock in your guess to see'):s.bi<0?'No days entered yet':`${DAYL[s.bi]}: ${hm(data(sim)[s.bi].min)}`;}},
   {id:'pick',label:'Pickups per day (mean)',unit:'',d:0,min:0,max:200,get:sim=>gate(sim,stats(sim).pick)},
   {id:'npwh',label:'Notifications per waking hour',unit:'',d:1,min:0,max:20,get:sim=>{const n=stats(sim).notif;return gate(sim,n===null?null:n/sim.p.awake);}},
   {id:'late',label:'Minutes after 10 p.m. this week',unit:'min',d:0,min:0,max:600,get:sim=>{const s=stats(sim);return gate(sim,s.lateN?s.late:null);}},
   {id:'cut',label:'Late-night minutes a notification-free window would cut',unit:'min/week',d:0,min:0,max:600,get:sim=>{const s=stats(sim);return gate(sim,s.lateN?s.late*sim.p.trig/100:null);}},
   {id:'over',label:'Days over a 2-hour limit',unit:'days',d:0,lvl:'honors',min:0,max:7,get:sim=>{const s=stats(sim);return gate(sim,s.n?s.over:null);}},
   {id:'overmin',label:'Minutes over 2 hours, all week',unit:'min',d:0,lvl:'honors',min:0,max:2000,get:sim=>{const s=stats(sim);return gate(sim,s.n?s.overMin:null);}},
-  {id:'first',label:'Average first pickup',text:true,lvl:'honors',get:sim=>{const a=vals(sim,'first');return !shown(sim)?'Lock in your guess to see':a.length?clock(mean(a)):'No times entered yet';}},
+  {id:'first',label:'Average first pickup',text:true,lvl:'honors',get:sim=>{const a=vals(sim,'first');return !shown(sim)?(pend(sim)?'Add up your week first':'Lock in your guess to see'):a.length?clock(mean(a)):'No times entered yet';}},
   {id:'sd',label:'Standard deviation of daily minutes',unit:'min',d:0,lvl:'ap',min:0,max:300,get:sim=>gate(sim,stats(sim).sd)},
   {id:'r',label:'Correlation r: notifications vs. pickups',unit:'',d:2,lvl:'ap',min:-1,max:1,get:sim=>gate(sim,corr(sim))}
  ],
@@ -152,9 +160,11 @@ const SIM={
   const chip=(col,lab)=>{ctx.fillStyle=col;ctx.fillRect(lx,ly-10*k,11,11*k);txt(ctx,lab,lx+16,ly,{s:12*k,c:PAL['cv-ink']});ctx.font=(12*k)+'px '+FONT;lx+=ctx.measureText(lab).width+34;};
   chip(PAL['s2'],big?'screen time':'screen time');chip(PAL['s5'],'after 10 p.m.');
   if(sh&&!big){ctx.font='700 13px '+FONT;const str=`Total ${f1(s.total/60)} h · ${s.pick!==null?f0(s.pick)+' pickups/day':''}`;const w=ctx.measureText(str).width+16;pill(ctx,str,780-w/2,ly-5,'#2d5fa8','#fff',13);}
+  if(sh&&!big&&G&&G.m){txt(ctx,`${sumLine(sim)} = ${fc(s.total)} min ÷ 60 = ${f1(s.total/60)} h · ${medLine(sim)}`,20,418,{s:12,w:700,c:PAL['cv-ink']});}
   if(G&&G.g){ctx.font='700 '+(12*Math.min(k,1.3))+'px '+FONT;const str=`Your guess: ${f1(G.g.gH)} h, ${f0(G.g.gP)} pickups/day`;const w=ctx.measureText(str).width+16;pill(ctx,str,780-w/2,24,'#9a5c00','#fff',12*Math.min(k,1.3));}},
  narrate(sim){const s=stats(sim),D=data(sim);
   if(!s.n)return 'No days yet. <b>Type your screen time for at least one day</b> in the table under the picture, or use the sample week.';
+  if(pend(sim))return `Your guess is locked. Now <b>add up the ${s.n} day${s.n===1?'':'s'} yourself</b>: the minutes are on the bars and in the table.`;
   if(!shown(sim))return `${s.n} day${s.n===1?'':'s'} entered. Before the tool adds anything up, <b>set your gut guess</b> for the week’s total hours and your pickups per day, then lock it in.`;
   const skew=s.mean-s.median;
   return `Total: <b>${f1(s.total/60)} hours</b> over ${s.n} day${s.n===1?'':'s'}. Mean ${hm(s.mean)} a day, median ${hm(s.median)}${Math.abs(skew)>=10?`: <b>the ${skew>0?'mean is higher because a few long days pull it up':'mean is lower because a few short days pull it down'}</b>`:', close together, so your days are fairly even'}. Busiest: ${DAYL[s.bi]}. ${s.over} of ${s.n} days went over 2 hours.`;},
@@ -164,6 +174,15 @@ const SIM={
   lockLabel:'Lock in my guesses',mathLabel:'Add it up',
   lock(sim){const s=stats(sim),H=s.total/60,P=s.pick||0;return {v:Math.abs(sim.p.gH-H)/Math.max(H,1)+Math.abs(sim.p.gP-P)/Math.max(P,1),gH:sim.p.gH,gP:sim.p.gP,label:`${f1(sim.p.gH)} hours this week, ${f0(sim.p.gP)} pickups a day`};},
   solve(sim){const s=stats(sim),H=s.total/60,P=s.pick||0;sim.p.gH=H;sim.p.gP=P;sim.st.shown=true;return {v:0,gH:H,gP:P,label:s.n?`${f1(H)} hours this week, ${s.pick!==null?f0(P)+' pickups a day':'no pickups entered'}`:'no days entered yet'};},
+  hint:{bio:'Lock in your guesses. Then you will add up the week yourself.'},
+  calc:{unit:'hours',d:1,tol:0.06,
+   prompt:{bio:sim=>{const D=dayMins(sim);if(!D.length)return 'Type at least one day of screen time in the table under the picture first. With no days, the total is 0 hours.';return `Your daily screen time, in minutes: <b>${D.map(x=>DAYS[x.i]+' '+fc(x.m)).join(', ')}</b>. Add them up and convert to hours (60 minutes = 1 hour). How many hours in all, to one decimal?`;},
+    ap:sim=>{const D=dayMins(sim);if(!D.length)return 'Type at least one day first. With no days, the total is 0 hours.';return `Daily minutes: ${D.map(x=>fc(x.m)).join(', ')}. Find Σx ÷ 60, the week’s total in hours, to one decimal.`;}},
+   answer:calcAns,
+   hint:'Add all the minutes first. Then divide the sum by 60.',
+   steps(sim){const s=stats(sim);if(!s.n)return ['No days entered, so the total is <b>0</b> hours.'];
+    return [`Add the days: ${sumLine(sim)} = ${fc(s.total)} minutes.`,`Divide by 60: ${fc(s.total)} ÷ 60 = <b>${fmtNum(s.total/60,2)}</b> hours, about ${f1(s.total/60)}.`,`For comparison: mean = ${fc(s.total)} ÷ ${s.n} = ${fmtNum(s.mean,1)} minutes a day, and the ${medLine(sim)}.`];}},
+  formula(sim){const s=stats(sim);if(!s.n)return 'No days entered yet.';return `Total = ${sumLine(sim)} = ${fc(s.total)} min ÷ 60 = ${f1(s.total/60)} h<br>Mean = ${fc(s.total)} ÷ ${s.n} = ${fmtNum(s.mean,1)} min a day; ${medLine(sim)}`+(s.pick!==null?`<br>Pickups: mean ${f0(s.pick)} a day`:'');},
   how:{bio:'Add the day totals and divide by 60 for hours. For pickups, add the days and divide by how many days you entered: that is the mean.',
    ap:'Total = Σ minutes ÷ 60. Mean pickups = Σ pickups ÷ n, where n counts only the days you filled in. Blank days are left out, not counted as zero.'},
   compare(sim,g,m){const s=stats(sim);if(!s.n)return 'Type at least one day in the table, then press <b>Add it up</b> again.';
@@ -175,6 +194,7 @@ const SIM={
   again(sim){sim.p.gH=20;sim.p.gP=50;sim.st.shown=false;}
  },
 challenges:[
+  {lvl:'bio',kind:'num',q:'A different week of screen time: 180, 150, 200, 240, 210, 300 and 330 minutes. How many hours is that in total, to one decimal?',answer:26.8,tol:0.06,unit:'hours',d:1,hint:'Add the seven days, then divide by 60.',explain:'180 + 150 + 200 + 240 + 210 + 300 + 330 = 1,610 minutes, and 1,610 ÷ 60 = 26.83, about 26.8 hours.'},
   {lvl:'bio',instant:true,q:'In the sample week, which is bigger: the mean or the median of daily screen time?',choices:['The mean','The median','They are equal'],correct:0,explain:'Mean: 2,030 ÷ 7 = 290 minutes. Median: the middle day in order is 268 minutes. Saturday (410) and Sunday (355) pull the mean up, while the median stays at a typical day.'},
   {lvl:'bio',instant:true,q:'Monday in the sample week had 160 notifications. Over 16 waking hours, about how often did the phone ask for attention?',choices:['About once an hour','About every 6 minutes','About every 30 seconds'],correct:1,explain:'160 ÷ 16 = 10 notifications per waking hour, and 60 ÷ 10 = one every 6 minutes. Across the whole week it averages about 9.5 per waking hour.'},
   {lvl:'honors',instant:true,q:'The sample week has 285 minutes after 10 p.m. If half of that use starts with a notification, how much would a notification-free window from 10 p.m. cut?',choices:['About 20 minutes a night','About 41 minutes a night','All of it'],correct:0,explain:'285 × 0.5 = 142.5 minutes a week, and 142.5 ÷ 7 ≈ 20 minutes a night. The window only cuts the use that notifications start; the rest is up to you.'},

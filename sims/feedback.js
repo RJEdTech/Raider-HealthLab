@@ -56,6 +56,19 @@ function offText(sim,g){const C=sc(sim),v=score(sim,g),s=sgn(sim);
  if(C.kind==='end')return `${fmtNum(v,1)} steps outside the band`;
  return `${minTxt(v*C.tu)} outside ${fmt(sim,C.set-C.band)} to ${fmt(sim,C.set+C.band)} ${C.u}`;}
 const GS=sim=>(sim.tour&&sim.tour.on)?null:sim.gutS;
+const pend=sim=>!!(BioLab.calcPending&&BioLab.calcPending(sim));
+/* "Your turn": the value one delay after the response lands. Before τ nothing changes, so from τ to 2τ the gap moves at the constant
+   rate s·g·D, and e(2τ) = D(1 + s·g·τ) exactly (the model clamps at its floor and ceiling). With no delay, ask for e(1) ≈ D·e^(s·g). */
+const fx=v=>{const r=Math.round(v*1000)/1000;return (r<0?'−':'')+Math.abs(r).toString();};
+let CUR=null;
+function calcCase(sim){const C=sc(sim),tau=lagOf(sim),g=+sim.p.gain,s=sgn(sim),D=clamp(pushOf(sim),C.lo,C.hi),tq=tau>0?2*tau:1,idx=Math.round(tq/DT),r=runP(sim);
+ const gap=r.e[Math.min(idx,r.n)],raw=tau>0?D*(1+s*g*tau):D*Math.exp(s*g),val=C.set+gap;
+ const time=t=>C.tu?(C.tu<1440?`minute ${fx(t*C.tu)}`:`day ${fx(t)}`):`step ${fx(t)}`;
+ const late=C.tu?(C.tu<1440?`${fx(tau*C.tu)} minutes`:`${fx(tau)} day${tau===1?'':'s'}`):`${fx(tau)} step${tau===1?'':'s'}`;
+ const dec=C.dec?2:1,setN=C.kind==='over'?'usual level':(C.kind==='end'?'baseline':'set point');
+ CUR={tol:Math.max(C.ystep*0.025,tau>0?0:0.07*Math.abs(gap)),d:dec,u:C.u};
+ return {C,tau,g,s,D,tq,gap,raw,val,time,late,setN,clamped:Math.abs(raw-gap)>1e-6&&tau>0};}
+const calcAns=sim=>{const q=calcCase(sim);return Math.round(q.val*1000)/1000;};
 function clearGut(sim){if(sim.gutS&&(sim.gutS.g||sim.gutS.m)){sim.gutS.g=null;sim.gutS.m=null;if(BioLab.gutRender)BioLab.gutRender(sim);}}
 function newLoop(sim){const C=sc(sim);if(sim.p.sign!==C.sign)BioLab.setValues(sim,{sign:C.sign});clearGut(sim);}
 
@@ -116,13 +129,19 @@ function drawChart(sim,ctx,k){const C=sc(sim),big=k>1.3,G=GS(sim);
  const below=pushOf(sim)>=0;txt(ctx,spl+(big?'':': '+fmt(sim,C.set)+' '+C.u),L+6,Y(C.set)+(below?16*Math.min(k,1.3):-6),{s:fs,w:700,c:PAL['cv-ink']});
  if(C.kind==='end')txt(ctx,C.endL,R-6,Y(C.set+C.hi)-6,{s:fs,w:700,c:PAL['s5'],a:'right'});
  /* curves */
+ const PD=pend(sim),nMax=PD?Math.round(lagOf(sim)/DT):Infinity;
  const curve=(g,s2,col,dash,wd)=>{const r=run(sim.p.scen,pushOf(sim),g,s2,lagOf(sim));ctx.strokeStyle=col;ctx.lineWidth=wd;ctx.setLineDash(dash||[]);ctx.beginPath();
-  for(let i=0;i<=r.n;i+=2){const x=X(i*DT),y=clamp(Y(C.set+r.e[i]),T,Bt);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();ctx.setLineDash([]);
-  if(r.tEnd!==null){const x=X(r.tEnd),y=Y(C.set+C.hi);ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fill();}};
+  for(let i=0;i<=Math.min(r.n,nMax);i+=(i+2>nMax&&i<nMax?1:2)){const x=X(i*DT),y=clamp(Y(C.set+r.e[i]),T,Bt);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();ctx.setLineDash([]);
+  if(r.tEnd!==null&&!PD){const x=X(r.tEnd),y=Y(C.set+C.hi);ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fill();}};
  const items=[];
  if(G&&G.m){curve(G.m.gain,G.m.s,PAL['s3'],null,3);items.push(['Math',PAL['s3']]);}
  if(G&&G.g){curve(G.g.gain,G.g.s,PAL['s4'],[8,5],2.5);items.push(['Your gut',PAL['s4']]);}
  curve(sim.p.gain,sgn(sim),PAL['rj'],null,3);items.unshift(['Gain '+fmtNum(sim.p.gain,2),PAL['rj']]);
+ if(PD){const q=calcCase(sim),x=X(q.tq);txt(ctx,'?',x,clamp(Y(C.set+q.D),T+30,Bt-10),{s:22*Math.min(k,1.4),w:700,c:PAL['rj'],a:'center'});
+  txt(ctx,big?'Work it out':'Work out this point first',x+16,clamp(Y(C.set+q.D),T+30,Bt-10)+(pushOf(sim)>=0?24:-24)*Math.min(k,1.3),{s:fs,w:700,c:PAL['rj']});}
+ else if(G&&G.m){const q=calcCase(sim);const Tm=q.time(q.tq)[0].toUpperCase()+q.time(q.tq).slice(1);const lab=big?`${Tm}: ${fx(q.val)}`:`${Tm}: ${fx(q.D)} × (1 ${q.s<0?'−':'+'} ${fx(q.g)}${q.tau!==1&&q.tau>0?' × '+fx(q.tau):''}) = ${fx(q.gap)}, so ${fx(q.val)} ${C.u}`;
+  if(q.tau>0)txt(ctx,lab,L+8,T+16*Math.min(k,1.3),{s:fs,w:700,c:PAL['rj']});
+  if(q.tau>0){ctx.fillStyle=PAL['rj'];ctx.beginPath();ctx.arc(X(q.tq),clamp(Y(q.val),T,Bt),5,0,7);ctx.fill();}}
  /* legend, right-aligned above the chart */
  ctx.font='700 '+fs+'px '+FONT;let lx=R;for(let i=items.length-1;i>=0;i--){const w=ctx.measureText(items[i][0]).width;lx-=w;txt(ctx,items[i][0],lx,T-10,{s:fs,w:700,c:items[i][1]});ctx.fillStyle=items[i][1];ctx.fillRect(lx-18,T-16,14,4);lx-=30;}
  /* readout pill */
@@ -130,6 +149,7 @@ function drawChart(sim,ctx,k){const C=sc(sim),big=k>1.3,G=GS(sim);
 
 const SIM={
  id:'feedback',hash:'feedback',apUnit:3,order:1,tab:'Feedback loops: body and machine',kind:'Simulation',next:['feedbuilder','scroll'],
+ skills:{bio:'Negative and positive feedback: the response is gain × the gap · Health (Unit 3: Reproductive system and hormone regulation; Unit 4: The brain and nervous system), Biology',honors:'Feedback with gain and delay: overshoot and settling · Health (Unit 3: Hormone regulation; Unit 4: The brain and nervous system), Biology',ap:'A delay differential equation, de/dt = −g·e(t − τ) · Health (Unit 3: Hormone regulation), AP Calculus AB (Unit 7: differential equations)'},
  card:'Tune how hard your body pushes back after a snack, then see why a feed that shows you more of what you watch is the opposite kind of loop.',
  title:'Feedback loops: how your body and your feed respond to a change',
  lede:{bio:'Your body keeps blood sugar and temperature near a set point with negative feedback: the response opposes the change. Some loops do the opposite. Positive feedback amplifies a change until something ends it, and your feed can run on the same kind of loop.',
@@ -172,6 +192,24 @@ const SIM={
    honors:'Before you look at the delay: set <b>Response strength</b> to the gain you think returns the loop to its band fastest, then lock it in.'},
   lock(sim){const v=score(sim);return {v,gain:sim.p.gain,s:sgn(sim),label:`gain ${fmtNum(sim.p.gain,2)}: ${offText(sim,sim.p.gain)}`};},
   solve(sim){const C=sc(sim);if(C.kind!=='end'&&sgn(sim)>0)sim.p.sign='neg';const b=bestGain(sim);sim.p.gain=b.g;return {v:b.v,gain:b.g,s:sgn(sim),label:`gain ${fmtNum(b.g,2)}${sgn(sim)<0&&C.kind!=='end'&&sim.gutS&&sim.gutS.g&&sim.gutS.g.s>0?', with negative feedback':''}: ${offText(sim,b.g)}`};},
+  hint:{bio:'Lock in your gain. Then you will work out one point on the curve yourself.'},
+  calc:{get unit(){return CUR?CUR.u:'';},get d(){return CUR?CUR.d:1;},tol:a=>CUR?CUR.tol:1,
+   prompt:{bio:sim=>{const q=calcCase(sim),C=q.C,dir=q.D>=0?'above':'below';
+     if(q.tau===0)return `${C.short} starts ${fx(Math.abs(q.D))} ${C.u} ${dir} its ${q.setN} of ${fx(C.set)}. Your gain is <b>${fx(q.g)}</b>, with no delay, so the gap ${q.s<0?'shrinks':'grows'} smoothly by a factor of e^(${q.s<0?'−':''}${fx(q.g)}) each time step. What is the ${C.short.toLowerCase()} at ${q.time(1)}?`;
+     return `${C.short} starts <b>${fx(Math.abs(q.D))} ${C.u} ${dir}</b> its ${q.setN} of <b>${fx(C.set)}</b>, at ${fx(C.set+q.D)}. Your gain is <b>${fx(q.g)}</b>. The response lands ${q.late} late, so nothing changes until ${q.time(q.tau)}. From then until ${q.time(q.tq)}, it ${q.s<0?'pushes the gap back':'pushes the gap further'} by gain${q.tau!==1?' × '+fx(q.tau):''} × the gap it sensed: ${fx(q.g)}${q.tau!==1?' × '+fx(q.tau):''} × ${fx(Math.abs(q.D))}. What is the ${C.short.toLowerCase()} at ${q.time(q.tq)}?`;},
+    ap:sim=>{const q=calcCase(sim),C=q.C;if(q.tau===0)return `de/dt = ${q.s<0?'−':''}${fx(q.g)}·e(t), e(0) = ${fx(q.D)}. Find the ${C.short.toLowerCase()} (set point ${fx(C.set)} + e) at t = 1 step (${q.time(1)}).`;
+     return `de/dt = ${q.s<0?'−':''}${fx(q.g)}·e(t − ${fx(q.tau)}), with e = 0 before the push and e(0) = ${fx(q.D)} ${C.u}. On 0 ≤ t ≤ ${fx(q.tau)} the delayed term is still 0. Find e(${fx(q.tq)}), then the ${C.short.toLowerCase()} (${fx(C.set)} + e) at ${q.time(q.tq)}.`;}},
+   answer:calcAns,
+   hint:'Multiply the gain by the gap to get the change. Then apply the change to the gap and add the set point back.',
+   steps(sim){const q=calcCase(sim),C=q.C,out=[];
+    if(q.tau===0){out.push(`Gap after one step: ${fx(q.D)} × e^(${q.s<0?'−':''}${fx(q.g)}) = ${fx(q.raw)}. The model’s small time steps give ${fx(q.gap)}.`);}
+    else{const ch=q.s*q.g*q.tau*q.D;out.push(`Until ${q.time(q.tau)} nothing changes: the gap is still ${fx(q.D)}.`);
+     out.push(`Change by ${q.time(q.tq)}: ${q.s<0?'−':'+'}${fx(q.g)}${q.tau!==1?' × '+fx(q.tau):''} × ${fx(q.D)} = ${fx(ch)}, so the gap is ${fx(q.D)} ${ch<0?'−':'+'} ${fx(Math.abs(ch))} = ${fx(q.raw)}.`);
+     if(q.clamped)out.push(`The model caps the gap at ${fx(q.gap)}.`);}
+    out.push(`${C.short}: ${fx(C.set)} ${q.gap<0?'−':'+'} ${fx(Math.abs(q.gap))} = <b>${fx(q.val)}</b> ${C.u}.`);return out;}},
+  formula(sim){const q=calcCase(sim),C=q.C,o=offText(sim,sim.p.gain);
+   const f=q.tau>0?`Gap at ${q.time(q.tq)} = ${fx(q.D)} × (1 ${q.s<0?'−':'+'} ${fx(q.g)}${q.tau!==1?' × '+fx(q.tau):''}) = ${fx(q.gap)}, so ${C.short.toLowerCase()} = ${fx(q.val)} ${C.u}`:`Gap at ${q.time(1)} ≈ ${fx(q.D)} × e^(${q.s<0?'−':''}${fx(q.g)}) = ${fx(q.raw)}`;
+   return `${f}<br>With gain ${fx(q.g)}: ${o}`;},
   how:{bio:'The math runs the loop for every gain from 0.05 to 1.50 and times how long each one stays outside the band. The winner is fastest. Because the response lands late, the winner is strong but not the strongest.',
    ap:'The tool integrates de/dt = −g·e(t − τ) in steps of 0.05 for each gain on the slider and keeps the one with the least time outside the band. Theory says g·τ = 1/e is the fastest with zero overshoot; with a band to land in, a little more gain is faster still.'},
   compare(sim,g,m){const C=sc(sim),gm=scoreMin(sim,g.v),mm=scoreMin(sim,m.v);
@@ -181,7 +219,7 @@ const SIM={
     return `No gain can fix a positive loop: it always runs away. Switching to negative feedback${C.kind==='over'?' (a stopping rule)':''} with a gain of ${fmtNum(m.gain,2)} saves ${lost}.`;}
    const diff=g.v-m.v;
    if(C.kind==='over'){if(diff<1)return `Your gut was right on: a stopping rule of strength ${fmtNum(g.gain,2)} keeps you to about ${Math.round(g.v)} extra minutes over your limit in 3 weeks, as good as the math.`;
-    return `Your stopping rule ${g.gain<m.gain?'was too gentle':'was so harsh it swung you under the limit and back over'}. It cost <b>${Math.round(g.v)} extra minutes</b> over 3 weeks; the math’s rule costs ${Math.round(m.v)}. That is <b>${Math.round(diff)} minutes (${fmtNum(diff/60,1)} hours)</b> of your time back.`;}
+    return `Your stopping rule ${g.gain<m.gain?'was too gentle':'was so harsh it swung you under the limit and back over'}. It cost <b>${Math.round(g.v)} extra minutes</b> over 3 weeks; the math’s rule costs ${Math.round(m.v)}. That is <b>${Math.round(diff)} fewer minutes (${fmtNum(diff/60,1)} hours)</b> over the limit.`;}
    if(gm==null){return `Your gain: ${fmtNum(g.v,1)} steps outside the band. The math: ${fmtNum(m.v,1)} steps.`;}
    if(gm-mm<2)return `Your gut was right on: within ${Math.round(Math.abs(gm-mm))} minutes of the fastest gain. You already sense that a late response should be strong, but not too strong.`;
    const why=g.gain<m.gain?`Your gain was too gentle, so the ${C.short.toLowerCase()} crept back slowly.`:`Your gain was too strong: because the response lands late, it overshot past the set point and swung back.`;
@@ -190,6 +228,7 @@ const SIM={
    sim.p.scen=sc2;sim.p.sign=sc2==='feed'?'neg':'neg';sim.p.push=R([0.5,0.75,1,1.25,1.5,2,-0.75,-1]);if(sc2==='feed')sim.p.push=Math.abs(sim.p.push);sim.p.gain=0.2;}
  },
  challenges:[
+  {lvl:'bio',kind:'num',q:'A bigger snack pushes blood sugar 60 mg/dL above its set point of 90, to 150. The gain is 0.25, and the insulin lands 10 minutes late. From minute 10 to minute 20 it pushes the gap back by 0.25 × 60. What is blood sugar at minute 20, in mg/dL?',answer:135,tol:0.5,unit:'mg/dL',d:0,hint:'Find 0.25 × 60, take it off the gap, then add the set point back.',explain:'0.25 × 60 = 15, so the gap falls from 60 to 45, and blood sugar is 90 + 45 = 135 mg/dL at minute 20.'},
   {lvl:'bio',instant:true,q:'Blood sugar rises after a snack. The pancreas releases insulin, and cells take glucose out of the blood. What kind of loop is this?',choices:['Positive feedback: insulin makes the change bigger','Negative feedback: insulin opposes the change','Not a loop: insulin is released no matter what'],correct:1,explain:'The response (insulin) pushes blood sugar back down, the opposite way from the change. That is negative feedback. When blood sugar falls too low, glucagon pushes it back up: the same loop working the other way.'},
   {lvl:'bio',instant:true,q:'During childbirth, pressure on the cervix triggers oxytocin, which makes contractions stronger, which adds more pressure. What stops this loop?',choices:['The body runs out of oxytocin','Birth: once the baby is born, the pressure that drives the loop is gone','Insulin turns it off'],correct:1,explain:'This is positive feedback: each round amplifies the last. A positive loop does not settle on its own. It runs until an endpoint removes its trigger, here the birth.'},
   {lvl:'bio',instant:true,q:'Your feed shows more of whatever you watch. One night you watch 20 extra minutes of one topic. With no stopping rule, what does this loop do to that topic over the next weeks?',choices:['It fades back to normal on its own','It grows: more watching brings more of it, which brings more watching','It stays at exactly 20 extra minutes'],correct:1,explain:'More watching leads to more of that content, which leads to more watching. In this model, at gain 0.20 the 20 extra minutes grow until you hit the assumed 4-hour ceiling, in about 2 weeks. A daily limit adds a negative loop that pulls it back.'},

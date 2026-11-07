@@ -20,13 +20,20 @@ const CACHE=new Map();
 function R(sim,over){const p=Object.assign({},sim.p,over||{}),key=[p.sched,p.ratio,p.train,p.patience,p.alpha,sim.st.seed].join('|');let o=CACHE.get(key);if(!o){o=run(p,sim.st.seed);if(CACHE.size>400)CACHE.clear();CACHE.set(key,o);}return o;}
 const other=sim=>sim.p.sched==='fixed'?'variable':'fixed';
 const GS=sim=>(sim.tour&&sim.tour.on)?null:sim.gutS;
-const shown=sim=>!!((sim.tour&&sim.tour.on)||(sim.st&&sim.st.shown)||(sim.gutS&&sim.gutS.g));
+const pend=sim=>!!(BioLab.calcPending&&BioLab.calcPending(sim));
+/* While the student works out "Your turn", the pulls after the posts stop stay hidden. */
+const shown=sim=>!!((sim.tour&&sim.tour.on)||(sim.st&&sim.st.shown&&!pend(sim))||(sim.gutS&&sim.gutS.g&&!pend(sim)));
+const pat=sim=>+sim.p.patience;
+const pf=v=>fmtNum(v,2).replace(/\.?0+$/,'');
+/* The quit rule as arithmetic: threshold = patience × longest empty run; it quits on the first empty run above that. */
+function quitMath(sim){const o=R(sim),L=Math.max(1,o.maxDry),p=pat(sim),lim=p*L,stop=o.thr;return {L,p,lim,stop,left:o.left,after:o.after,capped:o.capped};}
 function clearGut(sim){if(sim.gutS&&(sim.gutS.g||sim.gutS.m)){sim.gutS.g=null;sim.gutS.m=null;if(BioLab.gutRender)BioLab.gutRender(sim);}}
 const scen=sim=>{clearGut(sim);sim.st.shown=false;};
 const rule=sim=>sim.p.sched==='fixed'?`Fixed: every ${sim.p.ratio}th pull shows a new post`:`Variable: each pull has a 1 in ${sim.p.ratio} chance`;
 
 const SIM={
  id:'scroll',hash:'scroll',apUnit:2,order:2,tab:'Why can’t I stop scrolling?',kind:'Simulation',
+ skills:{bio:'Reinforcement schedules and a quit threshold: multiply, then compare · Health (Unit 4: The brain and nervous system; Unit 6: Screen time and social media)',honors:'Reward-prediction error δ = r − V and a quit threshold · Health (Unit 4: The brain and nervous system; Unit 6: Screen time and social media)',ap:'A recursive update rule V ← V + αδ · Health (Unit 4 and Unit 6), Algebra 2 (Unit 5: exponential functions)'},
  card:'Set the reward rule for a simulated user’s pull-to-refresh, then watch its dopamine prediction signal and how long it keeps pulling after the posts stop.',
  title:'Why can’t I stop scrolling?',
  lede:{bio:'You don’t pull anything here. You set the rule for when a simulated user’s pull to refresh shows something new, then watch two things: a model of its dopamine signal, and how long it keeps pulling once nothing new is coming.',
@@ -76,15 +83,17 @@ const SIM={
   P.forEach((q,i)=>{if(q.phase==='x'&&!sh)return;const x=SX+(i+0.5)*dx;ctx.globalAlpha=.6;ctx.beginPath();ctx.moveTo(x,SY+4);ctx.lineTo(x,SY+16);ctx.stroke();ctx.globalAlpha=1;
    if(q.rew){ctx.fillStyle=PAL['s3'];ctx.beginPath();ctx.arc(x,SY-2,Math.max(2,Math.min(4,dx*0.45)),0,7);ctx.fill();}});
   if(!sh)txt(ctx,'?',SX+NT*dx+(SW-NT*dx)/2,SY+14,{s:20*k,w:700,c:PAL['cv-soft'],a:'center'});
-  else{const xq=SX+P.length*dx;txt(ctx,(o.capped?'Still pulling at ':'Gives up after ')+o.after,Math.min(780,xq),SY+34*Math.min(k,1.2),{s:12*k,w:700,c:PAL['rj'],a:'right'});}
-  {const ly0=SY+34*Math.min(k,1.2);txt(ctx,'● new post',SX,ly0,{s:12*k,w:700,c:PAL['s3']});if(!big){ctx.font=(12*k)+'px '+FONT;txt(ctx,'|  a pull with nothing new',SX+ctx.measureText('● new post').width+18,ly0,{s:12*k,c:PAL['cv-soft']});}}
+  else{const xq=SX+P.length*dx,Q=quitMath(sim),mth=G&&G.m&&!o.capped;
+   const lab=mth?(big?`${Q.stop} − ${Q.left} = ${o.after} more`:`Quits at an empty run above ${pf(Q.p)} × ${Q.L} = ${pf(Q.lim)}: ${Q.stop} − ${Q.left} = ${o.after} more pulls`):(o.capped?'Still pulling at ':'Gives up after ')+o.after;
+   txt(ctx,lab,mth?780:Math.min(780,xq),SY+34*Math.min(k,1.2),{s:12*k,w:700,c:PAL['rj'],a:'right'});}
+  {const ly0=SY+34*Math.min(k,1.2);txt(ctx,'● new post',SX,ly0,{s:12*k,w:700,c:PAL['s3']});if(!big&&!(sh&&G&&G.m)){ctx.font=(12*k)+'px '+FONT;txt(ctx,'|  a pull with nothing new',SX+ctx.measureText('● new post').width+18,ly0,{s:12*k,c:PAL['cv-soft']});}}
   /* three windows on the dopamine model */
   const tr=P.filter(q=>q.phase==='t'),ex=P.filter(q=>q.phase==='x');
   const wins=[{t:'First 20 pulls',a:tr.slice(0,20)},{t:big?'Last 20 with posts':'Last 20 pulls with posts',a:tr.slice(-20)},{t:'After posts stop',a:sh?ex.slice(0,20):null}];
   const PY=118,PH=300,PW=246,top0=PY+30*k+16+22,bot0=PY+PH-10,BY=(top0+bot0)/2,SC=(bot0-top0)/2;
   wins.forEach((w,j)=>{const x0=20+j*(PW+11);rr(ctx,x0,PY,PW,PH,8);ctx.fillStyle=PAL['cv-bg2'];ctx.fill();
    txt(ctx,w.t,x0+10,PY+20*k,{s:12*k,w:700});
-   if(!w.a){txt(ctx,'?',x0+PW/2,PY+PH/2,{s:28*k,w:700,c:PAL['cv-soft'],a:'center'});txt(ctx,'Lock in your guess first',x0+PW/2,PY+PH/2+26*k,{s:12*k,c:PAL['cv-soft'],a:'center'});return;}
+   if(!w.a){txt(ctx,'?',x0+PW/2,PY+PH/2,{s:28*k,w:700,c:PAL['cv-soft'],a:'center'});txt(ctx,G&&G.g?'Work it out first':'Lock in your guess first',x0+PW/2,PY+PH/2+26*k,{s:12*k,c:PAL['cv-soft'],a:'center'});return;}
    const sw=(PW-20)/20,ry=PY+30*k+16;
    w.a.forEach((q,i)=>{const x=x0+10+i*sw;ctx.strokeStyle=PAL['cv-soft'];ctx.lineWidth=1.5;
     if(q.rew){ctx.fillStyle=PAL['s3'];rr(ctx,x+1.5,ry,sw-3,sw-3,2);ctx.fill();}else{rr(ctx,x+1.5,ry,sw-3,sw-3,2);ctx.stroke();}
@@ -99,6 +108,7 @@ const SIM={
   chip(PAL['s5'],big?'at the pull':'response at the pull (cue)');chip(PAL['s1'],big?'better':'better than predicted');chip(PAL['s2'],big?'worse':'worse than predicted');
   if(G&&G.g&&!big){ctx.font='700 13px '+FONT;const s='Your guess: '+G.g.guess+' pulls',wd=ctx.measureText(s).width+16;pill(ctx,s,780-wd/2,ly-5,'#9a5c00','#fff',13);}},
  narrate(sim){const o=R(sim),fx=sim.p.sched==='fixed',n=sim.p.ratio;
+  if(pend(sim))return `Your guess is locked. Now <b>work out the exact number</b>: the longest empty run was ${o.maxDry}, the patience is ${pf(pat(sim))}, and the user was ${o.left} empty pull${o.left===1?'':'s'} in when the posts stopped.`;
   if(!shown(sim))return fx?`Every ${n}th pull shows a new post. After ${sim.p.train} pulls the model has learned exactly when: the <b>response moves to the pull that predicts the post</b> (${f2(o.cue)}), and the post itself barely registers (${f2(o.burst)}). Lock in your guess to see what happens when the posts stop.`
    :`About 1 pull in ${n} shows a new post, at random. The model can never predict which one, so <b>each new post is still a surprise</b> (burst ${f2(o.burst)}), and the longest dry streak was ${o.maxDry} pulls. Lock in your guess to see what happens when the posts stop.`;
   if(fx)return `On the fixed schedule, ${o.maxDry} empty pulls in a row was the most the user ever saw. When the expected post does not come, the signal <b>dips</b> (${f2(o.dip)}), the gap quickly looks abnormal, and the user gives up after ${o.after} pull${o.after===1?'':'s'}.`;
@@ -109,6 +119,16 @@ const SIM={
   lockLabel:'Lock in my guess',mathLabel:'Run the model',
   lock(sim){const g=Math.round(sim.p.guess),a=R(sim).after;return {v:Math.abs(g-a),guess:g,label:`${g} more pulls`};},
   solve(sim){const a=R(sim).after;sim.p.guess=Math.min(200,a);return {v:Math.abs(sim.p.guess-a),guess:a,label:`${a} more pull${a===1?'':'s'}`};},
+  hint:{bio:'Lock in your guess. Then you will work out the exact number yourself from the user’s quit rule.'},
+  calc:{unit:'pulls',d:0,tol:0,
+   prompt:{bio:sim=>{const Q=quitMath(sim);return `While posts were coming, the longest run of empty pulls was <b>${Q.L}</b>. The user quits on the first pull where its empty run is more than <b>${pf(Q.p)} × ${Q.L}</b>. When the posts stopped, it was already <b>${Q.left}</b> empty pull${Q.left===1?'':'s'} into a run. How many more times does it pull?`;},
+    ap:sim=>{const Q=quitMath(sim);return `Longest dry streak in training: ${Q.L}. Patience: ${pf(Q.p)}. Dry streak already running when the posts stop: ${Q.left}. The user stops on the first pull where the dry streak exceeds patience × longest. How many pulls after the posts stop?`;}},
+   answer:sim=>R(sim).after,
+   hint:'Multiply to find the limit. The quitting pull is the first whole number above it. Then subtract the empty pulls it already had.',
+   steps(sim){const Q=quitMath(sim),out=[`Limit: ${pf(Q.p)} × ${Q.L} = ${pf(Q.lim)}. The first empty run above that is <b>${Q.stop}</b>.`,`It already had ${Q.left}, so it needs ${Q.stop} − ${Q.left} = <b>${Q.stop-Q.left}</b> more pulls.`];
+    if(Q.capped)out.push(`The model stops counting at ${Q.after}.`);
+    out.push(`Answer: <b>${Q.after}</b> pulls after the posts stop.`);return out;}},
+  formula(sim){const Q=quitMath(sim);return `Quit at the first empty run above ${pf(Q.p)} × ${Q.L} = ${pf(Q.lim)}, which is ${Q.stop}. Pulls after the posts stop = ${Q.stop} − ${Q.left} = ${Q.after}`;},
   how:{bio:'The model keeps a prediction for “a post on this pull.” It gives up when an empty run gets 1.5 times longer than the longest empty run it saw while posts were still coming.',
    ap:'Quit rule: stop on the first pull where the dry streak exceeds patience × (longest dry streak in training). Pulls after the posts stop = that threshold minus the dry streak already running when they stopped.'},
   compare(sim,g,m){const a=m.guess,o=R(sim),alt=R(sim,{sched:other(sim)}).after,d=Math.abs(g.guess-a),fx=sim.p.sched==='fixed';
@@ -118,10 +138,11 @@ const SIM={
   again(sim){sim.st.seed=1+Math.floor(Math.random()*9e5);sim.st.shown=false;sim.p.sched=Math.random()<0.5?'fixed':'variable';sim.p.ratio=3+Math.floor(Math.random()*6);sim.p.guess=15;}
  },
 challenges:[
+  {lvl:'bio',kind:'num',q:'While posts were coming, a user’s longest run of empty pulls was 10. It quits on the first pull where its empty run is more than 1.5 × 10. The last pull before the posts stopped showed a new post, so it starts at 0 empty pulls. How many more times does it pull?',answer:16,tol:0,unit:'pulls',d:0,hint:'Find 1.5 × 10. It quits on the first empty run above that.',explain:'1.5 × 10 = 15. The first empty run above 15 is 16, and it started at 0, so it pulls 16 more times.'},
   {lvl:'bio',instant:true,q:'Same average: one new post per 5 pulls. Which schedule keeps the simulated user pulling longer after the posts stop?',choices:['Fixed ratio: every 5th pull','Variable ratio: 1 in 5 at random','About the same'],correct:1,explain:'In this session the user pulls 20 more times on the variable schedule and 7 on the fixed one. On the fixed schedule it never saw more than 4 empty pulls in a row, so the end is obvious; on the variable one it once went 14. Ferster and Skinner found variable-ratio schedules produce the most persistent responding.'},
   {lvl:'bio',instant:true,q:'Fixed schedule, every 5th pull. After 100 pulls, when does the model’s dopamine signal respond most?',choices:['When the new post appears','At the 5th pull itself, before the post shows','It stops responding at all'],correct:1,explain:'The response at the 5th pull reaches 0.95, and the post itself barely registers (0.07). Once a reward is predictable, the signal moves to the cue that predicts it: Schultz, Dayan and Montague described this in 1997.'},
   {lvl:'honors',instant:true,q:'Fixed schedule, after 100 pulls. The posts stop. The 5th pull comes and nothing appears. What does the signal do?',choices:['A burst, because the pull itself is exciting','A dip below baseline','Nothing changes'],correct:1,explain:'The model predicted a post at that pull and got none, so the error is negative: a dip to −0.96. Dopamine neurons dip like this when an expected reward is omitted. That sharp signal is part of why the fixed-schedule user quits after 7 pulls.'},
-  {lvl:'honors',instant:true,q:'Sherman and colleagues (2016) scanned 32 teens, ages 13 to 18, with fMRI while they viewed photos. What happened with photos that showed many likes?',choices:['The nucleus accumbens, a reward area, was more active, and teens were more likely to like those photos too','Reward areas were less active','Likes made no difference'],correct:0,explain:'The nucleus accumbens was more active for photos with many likes, and teens were more likely to like photos that already had many likes. A like count is information the brain treats as reward.'},
+  {lvl:'honors',kind:'num',q:'Patience is 2. The longest empty run while posts came was 6 pulls, and the user is already 3 empty pulls into a run when the posts stop. How many more times does it pull?',answer:10,tol:0,unit:'pulls',d:0,hint:'2 × 6 is the limit. It quits on the first empty run above it.',explain:'2 × 6 = 12, so it quits when its empty run reaches 13. It already has 3: 13 − 3 = 10 more pulls.'},
   {lvl:'ap',instant:true,q:'The model predicts V = 0.2 for this pull. What is the prediction error δ if a post appears, and if none does?',choices:['0.8 and −0.2','1 and 0','0.2 and −0.8','1.2 and −0.2'],correct:0,explain:'δ = r − V. With a post, r = 1: δ = 1 − 0.2 = 0.8. Without, r = 0: δ = 0 − 0.2 = −0.2. On a 1-in-5 variable schedule, V settles near 0.2, so posts stay big surprises and missing posts barely dip.'},
   {lvl:'ap',instant:true,q:'V = 0.5 and α = 0.15. A post appears. What is the new V?',choices:['0.575','0.65','0.5','1.0'],correct:0,explain:'δ = 1 − 0.5 = 0.5. V ← 0.5 + 0.15 × 0.5 = 0.575. Each surprise moves the prediction a fraction α of the way toward what happened.'}
  ],

@@ -22,7 +22,12 @@ function shifted(sim,dm){const L=drinks(sim),q=latestOf(L);if(!q)return 0;return
 function lead(sim){const L=drinks(sim),q=latestOf(L),X=sim.p.limit,h=hl(sim);if(!q)return 0;const others=amtAt(L.filter(x=>x!==q),sim.p.bed,h);
  if(others>=X)return null;if(q.mg<=X-others)return 0;return h*Math.log2(q.mg/(X-others));}
 const GS=sim=>sim.gutS&&sim.gutS.g?sim.gutS.g:null;
-const shown=sim=>!!(sim.p.reveal||GS(sim)||(sim.tour&&sim.tour.on));
+/* The curve and the bedtime amount stay hidden while the student works it out ("Your turn"). */
+const pend=sim=>!!(BioLab.calcPending&&BioLab.calcPending(sim));
+const shown=sim=>!!(sim.p.reveal||(GS(sim)&&!pend(sim))||(sim.tour&&sim.tour.on));
+const nn=v=>(Math.round(v*100)/100).toString();
+const pieces=sim=>{const h=hl(sim),bed=sim.p.bed;return drinks(sim).slice().sort((a,b)=>a.t-b.t).map(q=>{const hrs=(bed-q.t)/60,n=hrs/h;return {q,hrs,n,left:q.mg*Math.pow(0.5,n)};});};
+function fLine(sim){const P=pieces(sim),h=hl(sim);if(!P.length)return 'No drinks, so 0 mg at bedtime';return P.map(p=>`${p.q.mg} × (1/2)^(${nn(p.hrs)} ÷ ${nn(h)})`).join(' + ')+` = ${mg(atBed(sim))}`;}
 const hid=(sim,v)=>shown(sim)?v:null;
 const mg=v=>Math.round(v)+' mg';
 const hm=hh=>{const t=Math.round(hh*60),H=Math.floor(t/60),M=t%60;return (H?H+' h'+(M?' ':''):'')+(M||!H?M+' min':'');};
@@ -31,6 +36,7 @@ const X0=360,X1=1800;
 
 const SIM={
  id:'caffeinecurve',hash:'caffeinecurve',apUnit:1,order:3,tab:'Caffeine Curve',kind:'Learning tool',next:['sleepdebt'],
+ skills:{bio:'Half-life and exponential decay · Algebra 2 (Unit 5), Health (Unit 7)',honors:'Exponential decay with a half-life that varies · Algebra 2 (Unit 5), Health (Unit 7)',ap:'Exponential decay and logarithms: t = h·log₂(A₀/A) · Algebra 2 (Unit 5), AP Precalculus (Units 2A and 2B)'},
  card:'Add your own drinks and your bedtime, guess how much caffeine is still in you when you turn out the light, then see how much the timing changes it.',
  title:'How much caffeine is still in you at bedtime?',
  lede:{bio:'Your body clears caffeine a fraction at a time, not all at once. For many healthy adults, about half is gone after 5 hours, half of what is left after 5 more, and so on.',
@@ -97,14 +103,16 @@ const SIM={
    /* bedtime amount */
    const vb=atBed(sim);ctx.fillStyle=PAL['rj'];ctx.beginPath();ctx.arc(X(bed),Y(vb),7,0,7);ctx.fill();ctx.strokeStyle=PAL['card'];ctx.lineWidth=2;ctx.stroke();
    pill(ctx,mg(vb)+' at bedtime',Math.min(X(bed)+(big?62:78),R-(big?62:72)),Math.max(T+40*k,Y(vb)-24*k),PAL['rj'],'#fff',13*Math.min(k,1.4));}
-  else{pill(ctx,'? mg at bedtime',Math.min(X(bed)+(big?62:70),R-(big?62:70)),T+44*k,PAL['muted'],'#fff',13*Math.min(k,1.4));}
+  if(!sh){pill(ctx,'? mg at bedtime',Math.min(X(bed)+(big?62:70),R-(big?62:70)),T+44*k,PAL['muted'],'#fff',13*Math.min(k,1.4));}
   if(G){const y=Y(G.guess);ctx.strokeStyle=PAL['s4'];ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(X(bed)-12,y);ctx.lineTo(X(bed)+12,y);ctx.stroke();txt(ctx,(big?'Gut ':'Your gut: ')+mg(G.guess),X(bed)-16,y+4*k,{s:12*k,w:700,c:PAL['s4'],a:'right'});}
   /* drinks: markers and labels (stacked so they never overlap) */
-  const sorted=L.slice().sort((a,b)=>a.t-b.t);let lastX=-1e9,lane=0;
+  const sorted=L.slice().sort((a,b)=>a.t-b.t);let lastX=-1e9,lane=0,maxLane=0;
   sorted.forEach(q=>{const x=X(q.t);ctx.fillStyle=PAL['s2'];ctx.beginPath();ctx.moveTo(x-7,B);ctx.lineTo(x+7,B);ctx.lineTo(x,B-12);ctx.closePath();ctx.fill();
    const lab=big?q.mg+' mg':DRINK[q.k].s+', '+q.mg+' mg, '+clk(q.t);ctx.font='700 '+(12*k)+'px sans-serif';const w=ctx.measureText(lab).width;
-   lane=(x-lastX<w+16)?lane+1:0;lastX=x;const ly=big?B-18*k-lane*16*k:B+(36+lane*16)*k;
+   lane=(x-lastX<w+16)?lane+1:0;lastX=x;maxLane=Math.max(maxLane,lane);const ly=big?B-18*k-lane*16*k:B+(36+lane*16)*k;
    if(ly<446)txt(ctx,lab,clamp(x,Lx+w/2,R-w/2),ly,{s:12*k,w:700,c:PAL['s2'],a:'center'});});
+  /* the math at the reveal, under the drink labels */
+  if(sh&&!big&&maxLane<2&&L.length&&sim.gutS&&sim.gutS.m&&!(sim.tour&&sim.tour.on))txt(ctx,'The math: '+fLine(sim),R,444,{s:12*k,w:700,c:PAL['rj'],a:'right'});
   if(!L.length)txt(ctx,'No drinks entered. Pick a drink and a time.',(Lx+R)/2,(T+B)/2,{s:14*k,c:PAL['cv-soft'],a:'center'});},
  narrate(sim){const L=drinks(sim),bed=sim.p.bed;
   if(!L.length)return 'No caffeine today, so <b>none is left at bedtime</b>. Add a drink to see how long it stays with you.';
@@ -113,22 +121,35 @@ const SIM={
   const vb=atBed(sim),e=shifted(sim,-120);
   return `At ${clk(bed)} about <b>${mg(vb)}</b> is still in you, ${Math.round(vb/total(sim)*100)}% of what you drank today and about ${(vb/COLA).toFixed(1)} colas’ worth. `+(atLeast('honors')?`That caffeine is still blocking adenosine receptors as you try to fall asleep. `:'')+`Moving your latest drink 2 hours earlier would leave ${mg(e)}.`;},
  gut:{better:'lower',controls:['guess'],
-  ask:{bio:'In the picture: a 16 oz energy drink (about 160 mg) at 3 PM, and asleep at 10:30 PM. Drag the slider here to how many milligrams you think are still in your body at bedtime, then lock it in.',
+  ask:{bio:'In the picture: a 16 oz energy drink (about 160 mg) at 3 PM, and asleep at 10:30 PM. By feel, drag the slider here to how many milligrams are still in your body at bedtime, then lock it in.',
    honors:'Before the curve appears: drag the slider here to how many milligrams are still in you at bedtime, then lock it in. (In the full lab, put in your own drinks and bedtime first.)'},
   lock(sim){return {v:Math.abs(sim.p.guess-atBed(sim)),guess:sim.p.guess,label:mg(sim.p.guess)+' at bedtime'};},
   solve(sim){const v=atBed(sim);sim.p.guess=v;return {v:0,guess:v,label:mg(v)+' at bedtime'};},
+  hint:{bio:'Lock in your gut answer. Then you will work out the bedtime amount yourself with the half-life.'},
+  calc:{unit:'mg',d:0,tol:a=>Math.max(2,0.03*a),
+   prompt:{bio:sim=>{const P=pieces(sim);if(!P.length)return `No drinks are entered. How many mg of caffeine are in you at bedtime (${clk(sim.p.bed)})?`;
+     return `Your drinks: ${P.map(p=>`<b>${p.q.mg} mg at ${clk(p.q.t)}</b>`).join(' and ')}. You fall asleep at <b>${clk(sim.p.bed)}</b>. Half of the caffeine is cleared every <b>${nn(hl(sim))} hours</b>. How many mg are still in you at bedtime?`;},
+    ap:sim=>{const P=pieces(sim);if(!P.length)return 'No drinks are entered. What does A(t) = A₀(1/2)^(t/h) give at bedtime?';
+     return `Drinks: ${P.map(p=>`${p.q.mg} mg at ${clk(p.q.t)}`).join(', ')}. Bedtime ${clk(sim.p.bed)}, half-life h = ${nn(hl(sim))} h. Use A = A₀(1/2)^(t/h) for each drink and add. How many mg at bedtime?`;}},
+   answer:atBed,
+   hint:'Hours from the drink to bedtime ÷ the half-life = the number of half-lives. Multiply the dose by (1/2) raised to that number. On a calculator, (0.5)^1.5 ≈ 0.354.',
+   steps(sim){const P=pieces(sim),h=hl(sim);if(!P.length)return ['No drinks, so <b>0 mg</b> at bedtime.'];
+    const out=P.map(p=>`${clk(p.q.t)} to ${clk(sim.p.bed)} is ${nn(p.hrs)} h, so ${nn(p.hrs)} ÷ ${nn(h)} = ${nn(p.n)} half-lives: ${p.q.mg} × (1/2)^${nn(p.n)} = ${nn(p.left)} mg.`);
+    out.push(P.length>1?`Add them: ${P.map(p=>nn(p.left)).join(' + ')} = <b>${nn(atBed(sim))} mg</b>, about ${Math.round(atBed(sim))} mg.`:`About <b>${Math.round(atBed(sim))} mg</b> is still in you at bedtime.`);
+    return out;}},
+  formula:fLine,
   how:{bio:'Count the half-lives between each drink and bedtime: hours ÷ 5. Each half-life cuts what is left in half. Add up what is left from every drink.',
    ap:'Bedtime caffeine = Σ dose × (1/2)^(hours before bed ÷ h), with h the half-life.'},
   compare(sim,g,m){const off=Math.abs(g.guess-m.guess),e=shifted(sim,-120),q=latestD(sim);
    if(!q)return off<5?'Your gut was right on: no drinks, no caffeine at bedtime.':`With no drinks entered, nothing is left at bedtime; your gut guessed ${mg(g.guess)}.`;
    const tail=` Having your latest drink 2 hours earlier would leave about <b>${mg(e)}</b>.`;
    if(off<5)return `Your gut was right on, within ${mg(off)}. About ${mg(m.guess)} is still in you at bedtime, roughly ${(m.guess/COLA).toFixed(1)} colas’ worth.`+tail;
-   return `Your gut was off by <b>${mg(off)}</b>, about ${(off/COLA).toFixed(1)} cans of cola. ${g.guess<m.guess?'Most people guess low: it feels like an afternoon drink has worn off, but only part of it has.':'You guessed high: your body has cleared more than it felt like.'} The model says <b>${mg(m.guess)}</b> is still in you as you try to fall asleep.`+tail;},
+   return `Your gut was off by <b>${mg(off)}</b>, about ${(off/COLA).toFixed(1)} cans of cola. ${g.guess<m.guess?'You guessed low: an afternoon drink is only partly cleared by bedtime.':'You guessed high: your body has cleared more of it by bedtime.'} The model says <b>${mg(m.guess)}</b> is still in you as you try to fall asleep.`+tail;},
   again(sim){const ks=['coffee','espresso','tea','cola','energy'],R=a=>a[Math.floor(Math.random()*a.length)];
    sim.p.d1=R(ks);sim.p.t1=720+30*Math.floor(Math.random()*15);sim.p.d2=Math.random()<0.5?R(ks):'none';sim.p.t2=390+30*Math.floor(Math.random()*6);sim.p.d3='none';sim.p.bed=1260+15*Math.floor(Math.random()*13);sim.p.guess=0;sim.p.reveal=false;}
  },
  challenges:[
-  {lvl:'bio',instant:true,q:'You drink a 16 oz energy drink (about 160 mg) at 3 PM and fall asleep at 10:30 PM. With a 5-hour half-life, about how much is still in you at bedtime?',choices:['Almost none: it wore off hours ago','About 57 mg, more than a whole can of cola','About 120 mg'],correct:1,explain:'10:30 PM is 7.5 hours after 3 PM: 1.5 half-lives. 160 × (1/2)^1.5 ≈ 57 mg. A 12 oz cola has about 35 mg.'},
+  {lvl:'bio',kind:'num',q:'A 16 oz energy drink (about 160 mg) at 5:30 PM, after practice. You fall asleep at 10:30 PM. With a 5-hour half-life, how many mg are still in you at bedtime?',answer:80,tol:2,unit:'mg',d:0,hint:'5:30 PM to 10:30 PM is how many half-lives?',explain:'5:30 PM to 10:30 PM is 5 hours: exactly one half-life. 160 × 1/2 = 80 mg, more than two colas’ worth (about 35 mg each).'},
   {lvl:'bio',instant:true,q:'Coffee at 12:30 PM, bedtime 10:30 PM: that is two half-lives. How much of the coffee’s caffeine is left?',choices:['None: two half-lives is 100%','One quarter','One half'],correct:1,explain:'After one half-life, 1/2 is left. After two, half of a half: 1/4. For an 8 oz coffee (about 95 mg), that is about 24 mg. It never reaches zero in a fixed number of half-lives.'},
   {lvl:'bio',instant:true,q:'Which leaves more caffeine at a 10:30 PM bedtime: a coffee (about 95 mg) at 3 PM, or a cola (about 35 mg) at 8 PM?',choices:['The coffee at 3 PM','The cola at 8 PM','They are about the same'],correct:0,explain:'Coffee: 7.5 h before bed, 95 × (1/2)^1.5 ≈ 34 mg. Cola: 2.5 h before bed, 35 × (1/2)^0.5 ≈ 25 mg. A big afternoon coffee can outlast a small evening soda.'},
   {lvl:'honors',instant:true,q:'Caffeine keeps you alert by blocking adenosine receptors. What does adenosine normally do?',choices:['It builds up while you are awake and creates sleep pressure','It wakes you up in the morning','It digests caffeine'],correct:0,explain:'Adenosine builds up the longer you are awake, and binding to its receptors makes you feel sleepy. Caffeine sits in those receptors without triggering them, so the sleep pressure is still there, just masked.'},
@@ -146,7 +167,7 @@ const SIM={
   {title:'Moving the drink',text:'Have the same drink at 1 PM instead and about 43 mg is left at bedtime. Two hours earlier cut it by only about a quarter. To be under 25 mg at 10:30 PM, you would need to drink it by about 9 AM.',pause:true,setup:sim=>BioLab.setValues(sim,{half:5,t1:780})},
   {lvl:'ap',title:'Solving for the time',text:'For a target A at bedtime, a drink of A₀ needs t = h·log₂(A₀/A) hours. For 160 mg down to 50 mg: 5·log₂ 3.2 ≈ 8.4 hours, so drink it by 2:06 PM for a 10:30 PM bedtime.',pause:true,setup:sim=>BioLab.setValues(sim,{half:5,t1:900,limit:50})}
  ],
- lab:{bio:'<p><b>Question:</b> How much of your own caffeine is still with you at bedtime?</p><ol><li>Put in the drinks you had on a normal school day and your usual bedtime. They stay on this page only.</li><li>Lock in your gut guess, then read the curve.</li><li>Move your latest drink 1, 2 and 3 hours earlier. Write down the bedtime amount each time.</li></ol><p>Write one sentence: what is one change that would cut your bedtime caffeine the most?</p>',
+ lab:{bio:'<p><b>Question:</b> How much of your own caffeine is still with you at bedtime?</p><ol><li>Put in the drinks from one school day (yours, or a made-up day) and a bedtime. They stay on this page only.</li><li>Lock in your gut guess, then read the curve.</li><li>Move your latest drink 1, 2 and 3 hours earlier. Write down the bedtime amount each time.</li></ol><p>Write one sentence: in this model, which change cuts the bedtime amount the most?</p>',
   honors:'<p><b>Question:</b> How much does your own half-life matter?</p><ol><li>With your own drinks, record the bedtime amount at half-lives of 3, 4, 5, 6 and 7 hours.</li><li>Set a bedtime target and read the latest time for your latest drink at 3 and 7 hours.</li></ol><p>Explain, using adenosine, why the same drink can affect two friends’ sleep differently.</p>',
   ap:'<p><b>Question:</b> When must a drink be finished to meet a bedtime target?</p><ol><li>Derive t = h·log₂(A₀/A) from A₀(1/2)^(t/h) = A.</li><li>Check it against the tool’s latest-time readout for three drinks and two targets.</li><li>Explain why a second, earlier drink changes the answer.</li></ol><p><b>CER:</b> Claim a latest time for your own day, with evidence from the tool and reasoning from the formula.</p>'},
  terms:[
@@ -157,7 +178,7 @@ const SIM={
   {t:'Exponential decay',d:'Losing the same fraction in each equal stretch of time: A(t) = A₀(1/2)^(t/h).',lvl:'ap'},
   {t:'Logarithm',d:'The inverse of an exponent. t = h·log₂(A₀/A) answers “how many half-lives until A₀ falls to A?”',lvl:'ap'}
  ],
- about:'<p><b>The model.</b> Each drink adds dose × (1/2)^(hours since the drink ÷ h), where h is the half-life; drinks simply add. The tool assumes all of a drink’s caffeine is in your body the moment you drink it. In reality it takes a while to absorb, so the real curve rises more gently at first. Half-life: about 5 hours for many healthy adults, roughly 3 to 7 hours depending on the person. That range is why Closer look lets you change it.</p><p><b>Caffeine amounts.</b> Round, commonly cited values: 8 oz brewed coffee about 95 mg, 1 shot of espresso about 63 mg, 8 oz black tea about 47 mg, 12 oz cola about 35 mg, 16 oz energy drink about 160 mg. Real drinks vary a lot by brand and size; some energy drinks have 200 to 300 mg. The label is the real number.</p><p><b>Guidelines.</b> The FDA says that for healthy adults, up to about 400 mg a day is not generally associated with negative effects. That figure is for adults, not teens. The American Academy of Pediatrics discourages caffeine for children and adolescents and has said energy drinks are not appropriate for them (clinical report, <i>Pediatrics</i>, 2011).</p><p><b>Your privacy.</b> The drinks and times you enter stay in this page’s memory. They are not saved, not recorded in a data table and not sent anywhere.</p><p><b>Not medical advice.</b> This is a simplified model. If you have questions about caffeine and your health or sleep, talk with a parent or your doctor. Raider MathLab has a separate tool on the math of caffeine half-life; this one is about your own day and your sleep.</p>'
+ about:'<p><b>The model.</b> Each drink adds dose × (1/2)^(hours since the drink ÷ h), where h is the half-life; drinks simply add. The tool assumes all of a drink’s caffeine is in your body the moment you drink it. In reality it takes a while to absorb, so the real curve rises more gently at first. Half-life: about 5 hours for many healthy adults, roughly 3 to 7 hours depending on the person. That range is why Closer look lets you change it.</p><p><b>Caffeine amounts.</b> Round, commonly cited values: 8 oz brewed coffee about 95 mg, 1 shot of espresso about 63 mg, 8 oz black tea about 47 mg, 12 oz cola about 35 mg, 16 oz energy drink about 160 mg. Real drinks vary a lot by brand and size; some energy drinks have 200 to 300 mg. The label is the real number.</p><p><b>Guidelines.</b> The FDA says that for healthy adults, up to about 400 mg a day is not generally associated with negative effects. That figure is for adults, not teens. The American Academy of Pediatrics discourages caffeine for children and adolescents and has said energy drinks are not appropriate for them (clinical report, <i>Pediatrics</i>, 2011).</p><p><b>Your privacy.</b> The drinks and times you enter stay in this page’s memory. They are not saved, not recorded in a data table and not sent anywhere.</p><p><b>Not medical advice.</b> This is a simplified model. A parent or your doctor can answer questions about caffeine and your own health or sleep. Raider MathLab has a separate tool on the math of caffeine half-life; this one is about your own day and your sleep.</p>'
 };
 BioLab.register(SIM);
 })();

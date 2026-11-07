@@ -7,6 +7,6 @@ feedbuilder:{
   'When X released its ranking code in 2023, a predicted reply was weighted 13.5 and a like 0.5, so one reply counted as much as 27 likes (from a secondary source; production may differ). Posts that start arguments get a boost.',
   'Your own feed controls are weights too. Mozilla found that on YouTube, “Not interested” stopped only about 11% of unwanted recommendations, while “Don’t recommend channel” stopped about 43%. Since December 2025, Instagram’s “Your Algorithm” view shows the Reels topics it thinks you like.'
  ],
- takeaway:'A feed gives you more of whatever its score rewards. If the score rewards time, you get what holds you, not what you would choose.'
+ takeaway:'A feed’s score is a weighted sum, and the feed serves more of whatever the weights reward. In this model, weights built on time serve what holds the viewer, not the mix they asked for.'
 }
 });

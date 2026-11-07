@@ -51,12 +51,22 @@ function describe(w){const k=presetOf(w);return k?PNAME[k].replace('Rank only','
 function clearGut(sim){if(sim.gutS&&(sim.gutS.g||sim.gutS.m)){sim.gutS.g=null;sim.gutS.m=null;if(BioLab.gutRender)BioLab.gutRender(sim);}}
 const GS=sim=>(sim.tour&&sim.tour.on)?null:sim.gutS;
 const matchPosts=v=>v/100*NP;
+/* "Your turn": the score of a typical post from the viewer's true habits, Σ weight × signal − penalty × P(Not interested). Watch time in minutes. */
+const SIGV=t=>[avgSec(t)/60,t.like,t.share,t.comment,t.ni];
+const tScore=(w,t)=>{const v=SIGV(t);return w[0]*v[0]+w[1]*v[1]+w[2]*v[2]+w[3]*v[3]-w[4]*v[4];};
+const n3=v=>{const r=Math.round(v*1000)/1000;return (r<0?'−':'')+Math.abs(r).toString();};
+const wn=x=>n3(x);
+function sumLine(w,t,sep){sep=sep||' × ';const v=SIGV(t);return wn(w[0])+sep+n3(v[0])+' + '+wn(w[1])+sep+n3(v[1])+' + '+wn(w[2])+sep+n3(v[2])+' + '+wn(w[3])+sep+n3(v[3])+' − '+wn(w[4])+sep+n3(v[4]);}
+const FR=T[0],OT=T[OUT];
+const calcAns=sim=>Math.round(tScore(wOf(sim),FR)*1000)/1000;
+const pend=sim=>!!(BioLab.calcPending&&BioLab.calcPending(sim));
 
 const SIM={
  id:'feedbuilder',hash:'feedbuilder',apUnit:2,order:1,tab:'Feed Builder',kind:'Simulation',
+ skills:{bio:'Weighted sums: score = Σ weight × signal · Health (Unit 6: Screen time and social media), Algebra 1 (Unit 1: expressions)',honors:'Weighted sums, and explore vs. exploit · Health (Unit 6: Screen time and social media), Algebra 1 (Unit 1)',ap:'Weighted sums and searching a grid for the best weights · Health (Unit 6: Screen time and social media), Algebra 1 (Unit 1)'},
  card:'Set the ranking weights for a short-video feed, run a test viewer through 50 posts, and see what maxing out watch time does to the feed.',
  title:'Build a feed: what should it rank by?',
- lede:{bio:'A short-video feed gives every post a score and shows the highest one next. You choose what counts in the score. The feed then learns from what your test viewer lingers on. Does a feed that keeps them longest give them what they actually want?',
+ lede:{bio:'A short-video feed gives every post a score and shows the highest one next: weight × watch minutes + weight × chance of a like + … for each signal, added up. You choose the weights. The feed then learns from what your test viewer lingers on. Does a feed that keeps them longest give them what they actually want?',
   honors:'The feed mixes exploit (serve the topic it already thinks wins) and explore (try something new). Watch what happens to the mix of topics when one signal dominates the score, and when the feed stops exploring.',
   ap:'Score = V(watch) × E(minutes watched) + V(like) × P(like) + V(share) × P(share) + V(comment) × P(comment) − V(NI) × P(Not interested). The P and E values are the feed’s running estimates for each topic, updated after every post.'},
  scale:'One test viewer scrolls 50 posts, about 10 to 30 minutes. The grid shows one test run; the readouts average 10 runs with fresh posts. The viewer and their habits are made up.',
@@ -85,7 +95,9 @@ const SIM={
   {id:'outrage',label:'Outrage clips',unit:'of 50',d:1,min:0,max:50,get:sim=>cur(sim).out},
   {id:'seen',label:'Topics the feed tried (of 5)',unit:'',d:1,lvl:'honors',min:0,max:5,get:sim=>cur(sim).seen},
   {id:'toptopic',label:'Top topic',text:true,lvl:'honors',get:sim=>{const o=cur(sim);return T[o.topT].name+', '+f0(o.topShare)+'% of the feed';}},
-  {id:'scores',label:'Score of a typical post, using the viewer’s true habits',text:true,lvl:'ap',get:sim=>{const w=wOf(sim);return T.map(t=>t.short+' '+fmtNum(w[0]*avgSec(t)/60+w[1]*t.like+w[2]*t.share+w[3]*t.comment-w[4]*t.ni,2)).join(' · ');}}
+  {id:'fscore',label:'Score of a typical friend’s post',unit:'',d:2,min:0,max:null,get:sim=>pend(sim)?null:tScore(wOf(sim),FR)},
+  {id:'oscore',label:'Score of a typical outrage clip',unit:'',d:2,min:0,max:null,get:sim=>pend(sim)?null:tScore(wOf(sim),OT)},
+  {id:'scores',label:'Score of a typical post, using the viewer’s true habits',text:true,lvl:'ap',get:sim=>{if(pend(sim))return 'Work out your score first';const w=wOf(sim);return T.map(t=>t.short+' '+fmtNum(tScore(w,t),2)).join(' · ');}}
  ],
  graphs:[{id:'trade',label:'Minutes vs. what the viewer endorses',custom:true}],defaultGraph:'trade',
  plot(sim,ctx,box){const ex=eps(sim),seed=sim.st.seed,G=GS(sim);
@@ -129,7 +141,9 @@ const SIM={
   const fy=big?345:328;
   const fs=big?'Score = '+w.slice(0,4).map((x,i)=>f1(x).replace(/\.0$/,'')+['×watch','×like','×share','×comment'][i]).join(' + ')+' − '+f1(w[4]).replace(/\.0$/,'')+'×NI'
    :'Score = '+f1(w[0]).replace(/\.0$/,'')+' × watch minutes + '+f1(w[1]).replace(/\.0$/,'')+' × P(like) + '+f1(w[2]).replace(/\.0$/,'')+' × P(share) + '+f1(w[3]).replace(/\.0$/,'')+' × P(comment) − '+f1(w[4]).replace(/\.0$/,'')+' × P(Not interested)';
-  txt(ctx,fs,20,fy,{s:13*k,w:700,c:PAL['cv-ink']});
+  const num=G&&G.g&&!pend(sim);
+  const fsN=big?'Friend’s post '+n3(tScore(w,FR))+' vs. outrage clip '+n3(tScore(w,OT)):'Friend’s post: '+sumLine(w,FR,'×')+' = '+n3(tScore(w,FR))+'   Outrage clip: '+n3(tScore(w,OT));
+  txt(ctx,num?fsN:fs,20,fy,{s:13*k,w:700,c:PAL['cv-ink']});
   const ps=13*Math.min(k,1.3);let py=big?382:366,px=20;ctx.font='700 '+ps+'px '+FONT;
   const pr=(s,bg)=>{ctx.font='700 '+ps+'px '+FONT;const wd=ctx.measureText(s).width+ps*1.1;pill(ctx,s,px+wd/2,py,bg,'#fff',ps);px+=wd+10;};
   pr(f1(o.min)+' min on the app','#2d5fa8');pr(f0(o.endorse)+'/100 endorsed','#2f6b3a');if(!big)pr(f1(o.out)+' outrage clips of 50','#a11a2e');
@@ -144,8 +158,8 @@ const SIM={
   let h='<p><b>What the viewer told you:</b> “Mostly my friends’ posts and study tips.” As shares of the feed: friends 40%, study tips 35%, cooking 15%, sports 10%, outrage 0%.</p>';
   if(!atLeast('honors'))return h+'<p>The feed cannot read that wish. It only sees what the viewer does: how long they watch, and whether they like, share, comment or tap Not interested.</p>';
   if(!sim.p.peek)return h+'<p>Turn on <b>Show the viewer’s hidden habits</b> to see what the viewer actually does with each topic.</p>';
-  h+='<div style="overflow-x:auto"><table class="mini" style="font-size:13px;width:100%"><thead><tr><th>Topic</th><th>Watches</th><th>Like</th><th>Share</th><th>Comm.</th><th>NI</th>'+(atLeast('ap')?'<th>Score</th>':'')+'</tr></thead><tbody>';
-  T.forEach(t=>{h+=`<tr><td>${t.short}</td><td>${fmtNum(avgSec(t),1)} s</td><td>${f0(100*t.like)}%</td><td>${f0(100*t.share)}%</td><td>${f0(100*t.comment)}%</td><td>${f0(100*t.ni)}%</td>${atLeast('ap')?`<td>${fmtNum(w[0]*avgSec(t)/60+w[1]*t.like+w[2]*t.share+w[3]*t.comment-w[4]*t.ni,2)}</td>`:''}</tr>`;});
+  h+='<div style="overflow-x:auto"><table class="mini" style="font-size:13px;width:100%"><thead><tr><th>Topic</th><th>Watches</th><th>Like</th><th>Share</th><th>Comm.</th><th>NI</th>'+(atLeast('ap')&&!pend(sim)?'<th>Score</th>':'')+'</tr></thead><tbody>';
+  T.forEach(t=>{h+=`<tr><td>${t.short}</td><td>${fmtNum(avgSec(t),1)} s</td><td>${f0(100*t.like)}%</td><td>${f0(100*t.share)}%</td><td>${f0(100*t.comment)}%</td><td>${f0(100*t.ni)}%</td>${atLeast('ap')&&!pend(sim)?`<td>${fmtNum(tScore(w,t),2)}</td>`:''}</tr>`;});
   return h+'</tbody></table></div><p><b>Watches:</b> average seconds watched. <b>NI:</b> chance of a Not interested tap. Outrage clips hold this viewer longest and draw the most comments, but they also get the most Not interested taps, and the viewer says they want none.</p>';},
  gut:{better:'higher',controls:['pick'],
   ask:{bio:'This viewer says they want mostly friends’ posts and study tips. Which <b>one signal</b> would you rank posts by to give them that? Pick one here, then lock it in.',
@@ -153,14 +167,27 @@ const SIM={
   lockLabel:'Lock in my ranking',mathLabel:'Let the optimizer try',
   lock(sim){const w=wOf(sim),o=evalW(w,eps(sim),sim.st.seed);return {v:o.endorse,w,min:o.min,out:o.out,label:`${describe(w)}: ${f0(o.endorse)}/100 endorsed, ${f1(o.min)} min`};},
   solve(sim){const w=optimize(sim,'good');setW(sim,w,false);const o=evalW(w,eps(sim),sim.st.seed);return {v:o.endorse,w,min:o.min,out:o.out,label:`${describe(w)}: ${f0(o.endorse)}/100 endorsed, ${f1(o.min)} min`};},
+  hint:{bio:'Lock in your pick. Then you will work out a post’s score yourself, the way the feed does.'},
+  calc:{d:3,tol:a=>Math.max(0.01,Math.abs(a)*0.01),
+   prompt:{bio:sim=>{const w=wOf(sim);return `Your weights: watch time <b>${wn(w[0])}</b>, likes <b>${wn(w[1])}</b>, shares <b>${wn(w[2])}</b>, comments <b>${wn(w[3])}</b>, Not interested penalty <b>${wn(w[4])}</b>. A typical friend’s post holds the viewer 10.5 s (<b>0.175</b> min), with a like chance of <b>0.40</b>, share <b>0.02</b>, comment <b>0.10</b> and Not interested <b>0.02</b>. Score = each weight × its signal, added up, minus the penalty × the Not interested chance. What is this post’s score?`;},
+    ap:sim=>{const w=wOf(sim);return `Weights w = (${w.map(wn).join(', ')}) for (watch minutes, P(like), P(share), P(comment), P(Not interested)). A typical friend’s post has signals (0.175, 0.40, 0.02, 0.10, 0.02). Compute Σ wᵢxᵢ for the first four minus w₅x₅.`;}},
+   answer:calcAns,
+   hint:'Multiply each weight by its signal. Add the first four products, then subtract the last one. A weight of 0 adds nothing.',
+   steps(sim){const w=wOf(sim),a=calcAns(sim),o=tScore(w,OT);const all=T.map(t=>({t,s:tScore(w,t)})).sort((x,y)=>y.s-x.s);
+    return [`Friend’s post: ${sumLine(w,FR)} = <b>${n3(a)}</b>.`,
+     `Same weights, a typical outrage clip (0.6 min, 0.05, 0.10, 0.14, 0.12): ${sumLine(w,OT)} = ${n3(o)}.`,
+     w.every(x=>x===0)?'Every weight is 0, so every post scores 0 and the feed has no way to choose.':`Highest typical score with these weights: ${all[0].t.name.toLowerCase()} (${n3(all[0].s)}). Every exploit pick leans toward it.`];}},
+  formula(sim){const w=wOf(sim);return `Friend’s post: ${sumLine(w,FR)} = ${n3(tScore(w,FR))}<br>Outrage clip: ${sumLine(w,OT)} = ${n3(tScore(w,OT))}`;},
   how:{bio:'The optimizer tried 324 combinations of the five weights (each 0, 5 or 10, and watch time 0, 2, 5 or 10) on the same 10 test runs, and kept the one whose feed best matched what the viewer asked for.',
    ap:'Grid search: 4 × 3 × 3 × 3 × 3 = 324 weight vectors, plus the one-signal feeds and yours, each scored by the mean endorse score over 10 seeded runs. It is a brute-force search, not calculus, because the feed’s choices are all-or-nothing.'},
   compare(sim,g,m){const d=m.v-g.v,dp=matchPosts(m.v)-matchPosts(g.v),dm=m.min-g.min,dout=g.out-m.out;
    if(d<1)return `Your gut was right on: your ranking already scores ${f0(g.v)}/100, as good as anything the optimizer found. About ${f0(matchPosts(g.v))} of the 50 posts match what the viewer asked for.`;
-   return `The optimizer’s weights match what the viewer asked for on about <b>${f0(dp)} more of the 50 posts</b> (${f0(g.v)} → ${f0(m.v)} out of 100). ${dout>=0.5?`That is ${f1(dout)} fewer outrage clips per run. `:''}${dm<-0.5?`The cost: the viewer stays ${f1(-dm)} fewer minutes (${f1(g.min)} → ${f1(m.min)}). A feed built for its viewer is not the one that holds them longest.`:dm>0.5?`It also holds them ${f1(dm)} min longer.`:'Time on the app barely changes.'}`;},
+   const sc=` With the optimizer’s weights a typical friend’s post scores ${n3(tScore(m.w,FR))} and an outrage clip ${n3(tScore(m.w,OT))}; with yours, ${n3(tScore(g.w,FR))} and ${n3(tScore(g.w,OT))}.`;
+   return `The optimizer’s weights match what the viewer asked for on about <b>${f0(dp)} more of the 50 posts</b> (${f0(g.v)} → ${f0(m.v)} out of 100). ${dout>=0.5?`That is ${f1(dout)} fewer outrage clips per run. `:''}${dm<-0.5?`The cost: the viewer stays ${f1(-dm)} fewer minutes (${f1(g.min)} → ${f1(m.min)}). In this model, the feed that matches the viewer’s request is not the one that holds them longest.`:dm>0.5?`It also holds them ${f1(dm)} min longer.`:'Time on the app barely changes.'}`+sc;},
   again(sim){sim.st.seed=1+Math.floor(Math.random()*9e5);setW(sim,PRESET.watch,false);}
  },
  challenges:[
+  {lvl:'bio',kind:'num',q:'Weights: watch time 4, likes 5, shares 10, comments 0, no penalty. A post is predicted to hold the viewer 30 s (0.5 min), with a like chance of 0.12 and a share chance of 0.10. What is its score?',answer:3.6,tol:0.01,d:2,hint:'Multiply each weight by its signal (watch time in minutes), then add.',explain:'4 × 0.5 = 2, 5 × 0.12 = 0.6, 10 × 0.10 = 1, and 0 for comments: 2 + 0.6 + 1 = 3.6. The feed computes a number like this for every candidate and serves the biggest.'},
   {lvl:'bio',instant:true,q:'You rank posts only by predicted watch time. What fills the feed?',choices:['Friends’ posts, because the viewer likes them most','Outrage clips, because they hold the viewer longest','An even mix of all five topics'],correct:1,explain:'Outrage clips hold this viewer about 36 s each, against about 10.5 s for a friend’s post. A score built only on watch time keeps choosing them: about 36 of 50 posts on the default runs, even though the viewer asked for none.'},
   {lvl:'bio',instant:true,q:'Which feed keeps the viewer on the app longer: ranking only by watch time, or ranking only by likes?',choices:['Watch time, by about 15 minutes','Likes, because liked posts are watched longer','About the same'],correct:0,explain:'On the default runs, watch time gives about 27.1 minutes and likes about 11.6. Ranking by likes fills the feed with short friends’ posts, which is closer to what the viewer wants (52 versus 28 out of 100 endorsed) but much less time on the app.'},
   {lvl:'honors',instant:true,q:'Rank only by likes, then turn Explore down from 20% to 0%. What happens to the feed?',choices:['It narrows further: friends’ posts take over almost every pick','It spreads out across all topics','Nothing changes'],correct:0,explain:'Friends’ posts go from 82% to 94% of the feed, the feed tries only about 3.2 of the 5 topics, and the endorsed score drops from 52 to 45. With no exploring, the feed only learns about topics it happens to serve, so once one topic beats its starting guess, it wins every pick. Vombatkere and colleagues found TikTok explored on roughly half or more of a new user’s first 1,000 videos.'},

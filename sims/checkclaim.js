@@ -46,7 +46,12 @@ function fakeRate(design,n){const k=design+'|'+n;if(FAKE.has(k))return FAKE.get(
 const effOf=sim=>atLeast('honors')?+sim.p.effect:0;
 const none=sim=>sim.p.who==='nobody';
 const GS=sim=>(sim.tour&&sim.tour.on)?null:sim.gutS;
-const shown=sim=>!!(sim.p.reveal||(GS(sim)&&GS(sim).g));
+const pend=sim=>!!(BioLab.calcPending&&BioLab.calcPending(sim));
+/* The rubric points stay hidden while the student scores the study ("Your turn"). */
+const shown=sim=>!pend(sim)&&!!(sim.p.reveal||(GS(sim)&&GS(sim).g));
+const sumOf=p=>rubric(p).L.map(L=>L.pts).join(' + ');
+function studyText(p){const no=p.who==='nobody';if(no)return 'There is no study at all.';
+ return `${WHO[p.who]}; ${p.n} people; ${DES[p.design].toLowerCase()}; ${p.paid==='unknown'?'who paid is not stated':'paid for by '+PAID[p.paid].toLowerCase()}.`;}
 const sgn1=v=>(v>=0?'+':'−')+fmtNum(Math.abs(v),1);
 function clearGut(sim){if(sim.gutS&&(sim.gutS.g||sim.gutS.m)){sim.gutS.g=null;sim.gutS.m=null;if(BioLab.gutRender)BioLab.gutRender(sim);}}
 function loadClaim(sim){const c=CLAIMS[sim.p.claim];BioLab.setValues(sim,{who:c.who,n:c.n,design:c.design,paid:c.paid});clearGut(sim);}
@@ -56,6 +61,7 @@ function designWord(d){return d==='none'?'no control group':(d==='compare'?'a co
 
 const SIM={
  id:'checkclaim',hash:'checkclaim',apUnit:4,order:2,tab:'Check the Claim',kind:'Simulation',prereq:[],
+ skills:{bio:'Scoring evidence: control groups, randomization and sample size · Health (Unit 2: Nutrition: labels, fad diets and supplements), Statistics (Unit 3: collecting data)',honors:'Regression to the mean and false positives · Health (Unit 2: Nutrition: labels, fad diets and supplements), Statistics (Unit 3: collecting data)',ap:'Margin of error: SE ≈ s·√(1/n₁ + 1/n₂) · Health (Unit 2: Nutrition), AP Statistics (Unit 7: inference for means)'},
  card:'Rate a supplement claim by the study behind it, then watch a 10-person study of a product that does nothing still “prove” it works.',
  title:'Check the claim: how good is the evidence?',
  lede:{bio:'Supplement labels make big promises: more energy, sharper focus, stronger immunity. The question is not whether people said it worked. It is who studied it, how many people, whether there was a fair comparison, and who paid.',
@@ -105,8 +111,9 @@ const SIM={
    y=10+ch+8;R.L.forEach((L,i)=>{const yy=y+(i+1)*24*ks+4;txt(ctx,SH[i],20,yy,{s:12*k,w:700});
     pill(ctx,sh?`${L.pts}/${L.max}`:'?',298,yy-6*ks,sh?(L.pts?PAL['s3']:PAL['cv-soft']):PAL['line'],sh?'#fff':PAL['cv-ink'],12*ks);});
    ty=y+5*24*ks+30*ks;}
-  if(sh){const b=BANDS[bandOf(R.total)];pill(ctx,`${R.total}/10: ${b.l}`,170,ty,PAL['rj'],'#fff',14*ks);}
-  else txt(ctx,big?'Lock in your gut':'Lock in your gut answer to score it',170,ty+5,{s:12*k,c:PAL['cv-soft'],a:'center'});
+  if(sh){const b=BANDS[bandOf(R.total)],mth=G&&G.m;pill(ctx,mth&&big?`${sumOf(sim.p)} = ${R.total}/10`:`${R.total}/10: ${b.l}`,170,ty,PAL['rj'],'#fff',14*ks);
+   if(mth&&!big)txt(ctx,`${sumOf(sim.p)} = ${R.total}`,170,ty-22*ks,{s:13*k,w:700,c:PAL['rj'],a:'center'});}
+  else txt(ctx,pend(sim)?(big?'Score it yourself':'Add up the points yourself first'):(big?'Lock in your gut':'Lock in your gut answer to score it'),170,ty+5,{s:12*k,c:PAL['cv-soft'],a:'center'});
   if(G&&G.g&&!big)txt(ctx,'Your gut: '+BANDS[gIdx(G.g.guess)].l,170,ty+28,{s:12,w:700,c:PAL['s4'],a:'center'});
   /* the simulated study */
   const X0=356;
@@ -138,6 +145,7 @@ const SIM={
   txt(ctx,big?`Fake “works”: ${Math.round(fr)}/100`:`A do-nothing product “works” in ${Math.round(fr)} of 100 studies like this`,X0+4,B+(big?78:82),{s:12*k,w:700,c:PAL['cv-ink']});},
  narrate(sim){const c=CLAIMS[sim.p.claim],R=rubric(sim.p);
   if(none(sim))return `“${c.claim}.” ${c.story} <b>With no study, there is no evidence to weigh, only a claim.</b>`;
+  if(pend(sim))return `Your rating is locked. Now <b>score the study yourself</b> with the rubric: who ran it, how many people, a control group, random assignment, and who paid.`;
   const S=cur(sim),fr=fakeRate(sim.p.design,+sim.p.n),d=sim.p.design;
   const lead=sim.p.claim&&CLAIMS[sim.p.claim]&&CLAIMS[sim.p.claim].who===sim.p.who&&+CLAIMS[sim.p.claim].n===+sim.p.n&&CLAIMS[sim.p.claim].design===d?c.story+' ':'';
   if(d==='none')return `${lead}With no control group, the people who took it changed by ${sgn1(S.mA)} points on average${effOf(sim)?'':', even though the product here does nothing'}. <b>They signed up on a bad day, and most bad days are followed by better ones.</b> A study like this “works” ${Math.round(fr)} times in 100 with a do-nothing product.`;
@@ -148,6 +156,15 @@ const SIM={
    honors:'Read the study details on the left. Before you see the rubric, pick how well supported you think the claim is, then lock it in.'},
   lock(sim){const m=bandOf(rubric(sim.p).total),g=gIdx(sim.p.guess);return {v:Math.abs(g-m),guess:sim.p.guess,label:BANDS[g].l};},
   solve(sim){const R=rubric(sim.p),m=bandOf(R.total);sim.p.guess=BANDS[m].id;return {v:0,guess:BANDS[m].id,label:`${BANDS[m].l} (${R.total} out of 10)`};},
+  hint:{bio:'Lock in your rating. Then you will score the study yourself with the rubric.'},
+  calc:{unit:'points',d:0,tol:0,
+   prompt:{bio:sim=>`The study behind this claim: <b>${studyText(sim.p)}</b><br>Rubric: independent researchers <b>2</b> (the seller 0). People: <b>0</b> under 30, <b>1</b> for 30 to 99, <b>2</b> for 100 to 499, <b>3</b> for 500 or more. A control group <b>2</b>. Randomized <b>2</b>. An independent funder <b>1</b>. No study at all scores 0. What does this study score, out of 10?`,
+    ap:sim=>`The study: ${studyText(sim.p)} Score it on the rubric (who 0 or 2; n: 0, 1, 2 or 3 at cutoffs 30, 100, 500; control 2; randomized 2; independent funder 1). Total out of 10?`},
+   answer:sim=>rubric(sim.p).total,
+   hint:'Go line by line: who ran it, how many people, control group, randomized, who paid. Then add.',
+   steps(sim){const R=rubric(sim.p);return R.L.map(L=>`${L.k}: ${L.v}, <b>${L.pts}</b> of ${L.max}.`).concat([`Total: ${sumOf(sim.p)} = <b>${R.total}</b> out of 10: ${BANDS[bandOf(R.total)].l.toLowerCase()}.`]);}},
+  formula(sim){const R=rubric(sim.p);let f=`Evidence score = ${sumOf(sim.p)} = ${R.total} out of 10 (${BANDS[bandOf(R.total)].l.toLowerCase()})`;
+   if(!none(sim))f+=`<br>Do-nothing product, ${sim.p.n} people, ${designWord(sim.p.design)}: “works” in ${Math.round(fakeRate(sim.p.design,+sim.p.n))} of 100 simulated studies`;return f;},
   how:{bio:'The rubric gives points for independent researchers (2), more people (up to 3), a control group (2), random assignment (2) and an independent funder (1). Then the simulation runs the same kind of study on a product that does nothing, 200 times, and counts how often it still looks like it works.',
    ap:'Rubric: who (0 or 2), n (0 under 30, 1 under 100, 2 under 500, 3 at 500 or more), control (2), randomized (2), funder (1). Simulation: T ~ N(60, 10), daily noise N(0, 10), sign-up only below 50, and “works” means an estimate of 5 points or more.'},
   compare(sim,g,m){const R=rubric(sim.p),c=CLAIMS[sim.p.claim];
@@ -158,9 +175,8 @@ const SIM={
   again(sim){const ks=Object.keys(CLAIMS),c=ks[Math.floor(Math.random()*ks.length)],C=CLAIMS[c];sim.p.claim=c;sim.p.who=C.who;sim.p.n=C.n;sim.p.design=C.design;sim.p.paid=C.paid;sim.p.guess='mod';sim.p.reveal=false;}
  },
  challenges:[
-  {lvl:'bio',instant:true,q:'A label says “FDA registered.” What does that tell you?',choices:['The FDA tested the product and found it works','The FDA approved it as safe','The facility is registered with the FDA, which is not approval of the product'],correct:2,explain:'Registration means the FDA knows the facility exists. It is not approval. Dietary supplements do not need FDA approval for safety or effectiveness before they are sold.'},
+  {lvl:'bio',kind:'num',q:'A different claim. Independent researchers studied 250 people. They compared people who chose to take the product with people who chose not to (a control group, not randomized). The seller paid. What does the rubric give it, out of 10?',answer:6,tol:0,unit:'points',d:0,hint:'Who 0 or 2; people 0, 1, 2 or 3; control 2; randomized 2; funder 1.',explain:'Independent researchers 2, 250 people (100 to 499) 2, control group 2, not randomized 0, seller paid 0: 2 + 2 + 2 + 0 + 0 = 6, moderate.'},
   {lvl:'bio',instant:true,q:'Ten people try an energy supplement on a day they feel worn out, and two weeks later most feel better. The product does nothing. Why did they improve?',choices:['They didn’t: the study must be fake','Bad days are usually followed by more ordinary days, so people improve on their own','A small study always makes products look worse'],correct:1,explain:'In this simulation, people who sign up on a bad day improve by about 9 points on average with no product at all. A 10-person study with no control group “shows” at least 5 points of improvement in about 85 of 100 runs.'},
-  {lvl:'bio',instant:true,q:'A supplement label says “supports immune health.” Under US law (DSHEA, 1994), what else must the label say?',choices:['Nothing else','That the FDA has not evaluated the statement and the product is not meant to diagnose, treat, cure or prevent any disease','That the product is FDA approved'],correct:1,explain:'A structure/function claim like “supports immune health” must carry that disclaimer. The claim did not need FDA approval first.'},
   {lvl:'honors',instant:true,q:'The muscle study compares 60 lifters who chose to take the product with 60 who chose not to. Why is that comparison unfair?',choices:['The groups are too small to compare','People who chose it tended to start on a bad day; the others less often, so the takers had more room to bounce back','Comparison groups always favor the product by exactly 5 points'],correct:1,explain:'The two groups differ before the product does anything. Here a do-nothing product still “works” in about 26 of 100 studies like this. With random assignment from the same sign-up pool, both groups bounce back alike and the difference measures the product.'},
   {lvl:'honors',instant:true,q:'Same do-nothing product, randomized with a placebo group. How does going from 40 people to 600 change how often the study looks like it works?',choices:['It rises, because more people improve','It falls toward zero, because chance differences between the groups shrink','It stays the same'],correct:1,explain:'With 40 people (20 per group), chance alone gives a 5-point “effect” in about 12 of 100 runs here. With 600, in 0 of 100. Bigger randomized studies are harder to fool.'},
   {lvl:'ap',instant:true,q:'Each person’s change has a spread of about 12 points. In a randomized study with 300 per group, about what is the 95% margin of error on the difference in average change?',choices:['About ±0.7','About ±1.9','About ±5','About ±12'],correct:1,explain:'SE ≈ 12·√(1/300 + 1/300) = 12·√(0.00667) ≈ 0.98. The margin is 1.96 × 0.98 ≈ 1.9 points.'},
