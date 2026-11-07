@@ -1,0 +1,42 @@
+BioLab.addReview({
+fooddesert:{
+ questions:[
+  {id:'bustrip',kind:'real',lvl:'bio',
+   q:'No car. The bus stop is a 5-minute walk from home, the bus comes every 30 minutes, the ride is 9 minutes, and the grocery is a 2-minute walk from the stop. If you arrive at the stop at a random time, how many minutes is the round trip, on average?',
+   num:{ans:62,tol:0.5,unit:'min'},
+   steps:['Arriving at a random time, the average wait is half the time between buses: 30 ÷ 2 = 15 minutes.','One way: 5 + 15 + 9 + 2 = 31 minutes.','There and back, with a wait each way: 2 × 31 = 62 minutes. By car (1.8 miles at about 20 mph, plus 3 minutes to park each way) it is about 17 minutes.'],
+   lab:{set:{place:'city',mode:'bus',reveal:true},look:'Read <b>Round trip to the full grocery</b> and <b>Same round trip by car</b>.'},verify:[['trip',62,0.01],['alt',16.8,0.01]]},
+  {id:'ruralyear',kind:'real',lvl:'bio',
+   q:'In the rural county, the round trip to the full grocery by transit van takes about 201.6 minutes. If the family makes one trip a week, how many hours is that in a year?',
+   num:{ans:174.7,tol:0.2,unit:'h'},
+   steps:['Minutes in a year: 201.6 × 52 = 10,483.2 minutes.','Hours: 10,483.2 ÷ 60 ≈ 174.7 hours.','By car the same trip takes about 42 minutes, or about 36.4 hours a year: about 138 hours less.'],
+   lab:{set:{place:'rural',mode:'bus',carry:8,reveal:true},look:'Read <b>Hours a year on these trips</b>. (Bags you can carry is set to 8, so it is one trip a week.)'},verify:[['year',174.72,0.05]]},
+  {id:'unitprice',kind:'test',lvl:'honors',
+   q:'A 2-pound bag of rice costs $2.49 and a 10-pound bag costs $8.99 (illustrative prices). To the nearest percent, how much more per pound does the small bag cost?',
+   num:{ans:38,tol:1,unit:'%'},
+   steps:['Unit price, small bag: $2.49 ÷ 2 = $1.245 a pound.','Unit price, large bag: $8.99 ÷ 10 = $0.899 a pound.','$1.245 ÷ $0.899 ≈ 1.385, so the small bag costs about 38% more per pound. A family that carries groceries home on foot or by bus may not be able to carry the large bag.']},
+  {id:'fullcost',kind:'real',lvl:'honors',
+   q:'Low-access city, by bus, 2 trips a week. A week of food on the Thrifty Food Plan costs $236.10 for 21 meals. Bus fare is $2.50 a ride. Each trip is a 62-minute round trip plus 46 minutes in the store. Cooking dinner takes 45 minutes. At $15 an hour, what is the full cost of one cooked dinner for 4?',
+   num:{ans:25.54,tol:0.02,unit:'$'},
+   steps:['Food money per meal: $236.10 ÷ 21 ≈ $11.243.','Travel money: 2 trips × 2 rides × $2.50 = $10 a week, or $10 ÷ 21 ≈ $0.476 a meal.','Grocery time: 2 × (62 + 46) = 216 minutes a week, or 216 ÷ 21 ≈ 10.29 minutes a meal. With cooking: 45 + 10.29 = 55.29 minutes.','Time value: 55.29 ÷ 60 × $15 ≈ $13.82.','Full cost: $11.243 + $0.476 + $13.82 ≈ $25.54. A quick-food dinner at $9 a person: $36 + 15 minutes × $15 an hour = $39.75.'],
+   lab:{set:{place:'city',mode:'bus',carry:4,vot:15,cook:45,ffp:9,reveal:true},look:'Read <b>Full cost of a cooked dinner for 4</b> and the quick-food one. Open the graph <b>Full cost of one dinner for 4</b>.'},verify:[['mealc',25.54,0.01],['mealq',39.75,0.01]]},
+  {id:'breakeven',kind:'test',lvl:'ap',
+   q:'Using the numbers above, a cooked dinner costs $11.72 in money and takes 55.29 minutes; a quick-food dinner costs $36.00 and takes 15 minutes. Above what value of an hour (to the nearest dollar) does quick food have the lower full cost?',
+   num:{ans:36,tol:0.5,unit:'$/h'},
+   steps:['Full cost = money + (minutes ÷ 60) × h, where h is the value of an hour.','Set them equal: 11.72 + (55.29 ÷ 60)h = 36.00 + (15 ÷ 60)h.','Subtract: 24.28 = (40.29 ÷ 60)h = 0.6715h, so h ≈ $36.16 an hour.','Below about $36 an hour, cooking has the lower full cost; above it, quick food does. Longer trips or fewer bags per trip lower the break-even point.'],
+   lab:{set:{place:'city',mode:'bus',carry:4,cook:45,ffp:9,reveal:true},look:'Read <b>Break-even value of an hour</b>.'},verify:[['be',36.16,0.02]]},
+  {id:'lila',kind:'test',lvl:'honors',
+   q:'In USDA’s 2019 food-access data, 231,087 of Shelby County, Tennessee’s 927,644 residents (2010 Census) lived in low-income, low-access tracts at 1 and 10 miles. What percent is that, to the nearest 0.1%?',
+   num:{ans:24.9,tol:0.1,unit:'%'},
+   steps:['231,087 ÷ 927,644 ≈ 0.2491.','That is about 24.9%. For the United States as a whole, the same measure gives 39.1 million of 308.7 million, about 12.7%.','What it hides: the count includes everyone in a flagged tract, even people who live close to a store, and it uses 2010 population with a 2019 store list.']},
+  {id:'supply',kind:'test',lvl:'ap',
+   q:'Allcott and coauthors (2019) found that a new nearby supermarket changed the healthfulness of residents’ grocery purchases very little, and that differences in demand explained about 90% of the gap between higher- and lower-income households. Which conclusion does this evidence support best?',
+   choices:['Food access never matters for health','Opening stores alone is unlikely to close most of the gap in what families buy, but it does not measure time costs, food swamps or prices that families face','Families’ food preferences are fixed and cannot change','Supermarkets cause the gap'],correct:1,
+   steps:['The study measures what households bought, before and after stores opened and when households moved.','It found small effects of supply (at most about 1.5% from nearby access, about 10% from equal access and prices) and linked demand to education and nutrition knowledge.','It does not show that access never matters, and it does not show that demand is fixed: preferences, habits, knowledge, time and budgets all shape it, and they can change. Food-swamp studies and time-cost studies ask different questions.']},
+  {id:'ev',kind:'real',lvl:'ap',
+   q:'The American Diabetes Association estimated that diabetes cost the U.S. $412.9 billion in 2022. The U.S. population was 333,287,557. As an expected value, what is that per resident per year, to the nearest dollar?',
+   num:{ans:1239,tol:1,unit:'$'},
+   steps:['$412,900,000,000 ÷ 333,287,557 ≈ $1,238.87.','About $1,239 per resident per year: $920 in medical care ($306.6 billion) and $319 in lost productivity ($106.3 billion).','It is an average over everyone, not a bill anyone pays, and it covers diabetes from all causes.']}
+ ]
+}
+});
