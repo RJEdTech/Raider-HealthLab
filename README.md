@@ -19,3 +19,7 @@ No tool scores a student's mental health, weight or body, and nutrition tools te
 
 ## Files
 `index.html` (page shell), `engine.js` (shared lab bench), `biolab.css` (styles), `courses.js` (sections and the Health course order), `sims/*.js` (one per tool), `practical/*.js` (question, answer, uses), `review/*.js` (review questions).
+
+## License
+
+© 2026 Jason Beyer, RJ Ed Tech. Licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/): free to share and adapt for non-commercial use with credit. See [LICENSE](LICENSE).
