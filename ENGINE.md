@@ -127,3 +127,8 @@ While they wait, a cue above the buttons says what to look at ("Watch the model"
 - `?pace=off` turns it off in that browser for every Raider Labs site (shared `raider-labs-pace` key in localStorage); `?pace=on` turns it back on.
 - Hooks are wrappers on `tourGo`, `renderChallenge`, `renderReview`, `vlGo` (and `guideReveal` in the math engine), so a step that renders through those gets the wait with no change to the sim.
 - Playwright treats `aria-disabled` buttons as disabled and waits; use `click(force=True)` to test an early click.
+
+## Full lab answer and walkthrough stages (Nov 13, 2026)
+- **Full lab shows the answer once the student has tried.** In any mode but Guided, step 3 of the gut box ("What the math got you") adds the practical's `answer` and `takeaway` under the comparison, but only after the student has locked a gut answer and asked for the math. Guided already shows them on its end card.
+- **Walkthrough stages.** A tool can build its picture up one step at a time: in `draw`, `const stg=(sim.tour&&sim.tour.on)?(sim.tst||1):99`, and each tour step's `setup` starts with `sim.tst=N`. Gate each layer with `stg>=N`, draw a red outline around the new layer when `stg===N`, and treat 99 (no walkthrough) as "show everything". Number the steps by their place in the full list, so honors and AP steps keep their numbers at every level.
+- **Use it cards** read `<b>Do:</b> … <b>Why:</b> …`: an action a student can take, then the reason, with a named source or date where one exists.

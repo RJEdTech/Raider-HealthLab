@@ -132,7 +132,8 @@ const SIM={
    const hit=(x,y)=>boxes.some(b=>x<b[0]+b[2]&&x+w>b[0]&&y-11<b[1]&&y+2>b[1]-13);
    const o=opts.find(([x,y])=>!hit(x,y));if(!o)return;boxes.push([o[0],o[1],w]);txt(ctx,p[2],o[0],o[1],{s:12,c:PAL['fg']});});
   const r=corr(sim);if(atLeast('ap')&&r!==null&&shown(sim))txt(ctx,'r = '+fmtNum(r,2)+' (n = '+pts.length+' days)',box.L+10,box.T+12,{s:13,w:700,c:PAL['fg']});},
- draw(sim,ctx,vdt,k){const D=data(sim),s=stats(sim),sh=shown(sim),G=GS(sim),big=k>1.3;
+ draw(sim,ctx,vdt,k){const stg=(sim.tour&&sim.tour.on)?(sim.tst||1):99,D=data(sim),s=stats(sim),sh=shown(sim),G=stg>=99?GS(sim):null,big=k>1.3;
+  const hb=(x,y,w,h)=>{ctx.strokeStyle=PAL['rj'];ctx.lineWidth=2.5;ctx.strokeRect(x,y,w,h);};
   ctx.fillStyle=PAL['cv-bg'];ctx.fillRect(0,0,800,450);
   txt(ctx,sim.p.week==='mine'?'Your week':'The sample week (made up)',20,24,{s:14*k,w:700});
   if(!s.n){txt(ctx,'Type your numbers in the table under the picture.',400,200,{s:16*k,w:700,c:PAL['cv-ink'],a:'center'});txt(ctx,'Nothing you type leaves this page.',400,200+26*k,{s:13*k,c:PAL['cv-soft'],a:'center'});return;}
@@ -142,16 +143,20 @@ const SIM={
   ctx.strokeStyle=PAL['cv-ink'];ctx.beginPath();ctx.moveTo(L,Y0);ctx.lineTo(R,Y0);ctx.stroke();
   D.forEach((d,i)=>{const x=L+i*cw+cw*0.16,w=cw*0.68,m=+d.min;
    txt(ctx,big?DAYS[i].slice(0,2):DAYS[i],x+w/2,Y0+18*k,{s:12*k,w:700,a:'center'});
-   if(!big&&d.pick!==null&&isFinite(d.pick))txt(ctx,f0(d.pick)+' pickups',x+w/2,Y0+34,{s:12,c:PAL['cv-soft'],a:'center'});
+   if(!big&&d.pick!==null&&isFinite(d.pick)&&stg>=5)txt(ctx,f0(d.pick)+' pickups',x+w/2,Y0+34,{s:12,c:PAL['cv-soft'],a:'center'});
    if(d.min===null||!isFinite(m))return;
    const lt=clamp(+d.late||0,0,m);ctx.fillStyle=PAL['s2'];ctx.fillRect(x,Y(m),w,Y0-Y(m));
-   if(lt>0){ctx.fillStyle=PAL['s5'];ctx.fillRect(x,Y(m),w,Y(m-lt)-Y(m));}
-   if(sh&&i===s.bi){ctx.strokeStyle=PAL['rj'];ctx.lineWidth=3;ctx.strokeRect(x-3,Y(m)-3,w+6,Y0-Y(m)+3);}
+   if(lt>0){ctx.fillStyle=PAL['s5'];ctx.fillRect(x,Y(m),w,Y(m-lt)-Y(m));if(stg===7)hb(x-3,Y(m)-3,w+6,Y(m-lt)-Y(m)+6);}
+   if(stg===6&&m>LIMIT){ctx.fillStyle=PAL['s4'];ctx.globalAlpha=.35;ctx.fillRect(x,Y(m),w,Y(LIMIT)-Y(m));ctx.globalAlpha=1;}
+   if(stg===4&&i!==s.bi&&m===Math.min(...D.filter(e=>e.min!==null&&isFinite(e.min)).map(e=>+e.min))){ctx.strokeStyle=PAL['s3'];ctx.lineWidth=3;ctx.strokeRect(x-3,Y(m)-3,w+6,Y0-Y(m)+3);}
+   if(sh&&i===s.bi&&(stg===4||stg>=99)){ctx.strokeStyle=PAL['rj'];ctx.lineWidth=3;ctx.strokeRect(x-3,Y(m)-3,w+6,Y0-Y(m)+3);}
    if(!big||m>=60){const lab=big?(m/60).toFixed(1):hm(m);ctx.font='700 '+(12*k)+'px '+FONT;const tw=ctx.measureText(lab).width+6;ctx.fillStyle=PAL['cv-bg'];ctx.fillRect(x+w/2-tw/2,Y(m)-8-12*k,tw,14*k);txt(ctx,lab,x+w/2,Y(m)-8,{s:12*k,w:700,a:'center'});}});
   /* reference lines, labeled in the right gutter with no overlaps */
-  const lines=[{v:LIMIT,col:PAL['s4'],dash:[3,4],lab:big?'2 h limit':'2-hour limit',sub:big?'':'(teen accounts)'}];
-  if(sh){lines.push({v:s.mean,col:PAL['s1'],dash:[],lab:'Mean',sub:hm(s.mean)});lines.push({v:s.median,col:PAL['s3'],dash:[7,5],lab:'Median',sub:hm(s.median)});}
-  lines.forEach(l=>{ctx.strokeStyle=l.col;ctx.lineWidth=l.dash.length&&l.v===LIMIT?2:2.5;ctx.setLineDash(l.dash);ctx.beginPath();ctx.moveTo(L,Y(l.v));ctx.lineTo(R+6,Y(l.v));ctx.stroke();ctx.setLineDash([]);l.y=Y(l.v);});
+  const lines=stg>=6?[{v:LIMIT,col:PAL['s4'],dash:[3,4],lab:big?'2 h limit':'2-hour limit',sub:big?'':'(teen accounts)'}]:[];
+  if(stg===8&&s.sd){ctx.fillStyle=PAL['s1'];ctx.globalAlpha=.12;ctx.fillRect(L,Y(s.mean+s.sd),R-L,Y(s.mean-s.sd)-Y(s.mean+s.sd));ctx.globalAlpha=1;txt(ctx,'Mean ± 1 SD: '+hm(s.mean-s.sd)+' to '+hm(s.mean+s.sd),L+8,Y(s.mean+s.sd)-6,{s:13*k,w:700,c:PAL['s1']});}
+  if(stg===4&&s.range!==null){const mx=Math.max(...D.filter(e=>e.min!==null&&isFinite(e.min)).map(e=>+e.min)),xr=R+4;ctx.strokeStyle=PAL['rj'];ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(xr-8,Y(mx));ctx.lineTo(xr,Y(mx));ctx.lineTo(xr,Y(mx-s.range));ctx.lineTo(xr-8,Y(mx-s.range));ctx.stroke();txt(ctx,'Range',xr+8,(Y(mx)+Y(mx-s.range))/2,{s:13*k,w:700,c:PAL['rj']});txt(ctx,f0(s.range)+' min',xr+8,(Y(mx)+Y(mx-s.range))/2+16*k,{s:13*k,w:700,c:PAL['rj']});}
+  if(sh&&stg>=3&&stg!==4){lines.push({v:s.mean,col:PAL['s1'],dash:[],lab:'Mean',sub:hm(s.mean)});lines.push({v:s.median,col:PAL['s3'],dash:[7,5],lab:'Median',sub:hm(s.median)});}
+  lines.forEach(l=>{ctx.strokeStyle=l.col;ctx.lineWidth=(stg===3&&l.v!==LIMIT)||(stg===6&&l.v===LIMIT)?4.5:l.dash.length&&l.v===LIMIT?2:2.5;ctx.setLineDash(l.dash);ctx.beginPath();ctx.moveTo(L,Y(l.v));ctx.lineTo(R+6,Y(l.v));ctx.stroke();ctx.setLineDash([]);l.y=Y(l.v);});
   const gap=(big?1.05:2.1)*14*k;const ord=[...lines].sort((a,b)=>a.y-b.y);ord.forEach((l,i)=>{l.ly=l.y+4;if(i&&l.ly<ord[i-1].ly+gap)l.ly=ord[i-1].ly+gap;});
   const over=ord.length?ord[ord.length-1].ly+(big?0:14*k)-(Y0+10):0;if(over>0)ord.forEach(l=>l.ly-=over);
   ord.forEach(l=>{txt(ctx,l.lab,R+12,l.ly,{s:12*k,w:700,c:l.col});if(l.sub&&!big)txt(ctx,l.sub,R+12,l.ly+14*k,{s:12*k,c:l.col});});
@@ -159,7 +164,8 @@ const SIM={
   const ly=440;ctx.font=(12*k)+'px '+FONT;let lx=20;
   const chip=(col,lab)=>{ctx.fillStyle=col;ctx.fillRect(lx,ly-10*k,11,11*k);txt(ctx,lab,lx+16,ly,{s:12*k,c:PAL['cv-ink']});ctx.font=(12*k)+'px '+FONT;lx+=ctx.measureText(lab).width+34;};
   chip(PAL['s2'],big?'screen time':'screen time');chip(PAL['s5'],'after 10 p.m.');
-  if(sh&&!big){ctx.font='700 13px '+FONT;const str=`Total ${f1(s.total/60)} h · ${s.pick!==null?f0(s.pick)+' pickups/day':''}`;const w=ctx.measureText(str).width+16;pill(ctx,str,780-w/2,ly-5,'#2d5fa8','#fff',13);}
+  if(stg===2&&!big){const str=D.filter(d=>d.min!==null&&isFinite(d.min)).map(d=>fc(+d.min)).join(' + ')+' = '+fc(s.total)+' min ÷ 60 = '+f1(s.total/60)+' h';txt(ctx,str,20,412,{s:14,w:700,c:PAL['rj']});}
+  if(sh&&!big&&stg>=2){ctx.font='700 13px '+FONT;const str=`Total ${f1(s.total/60)} h`+(stg>=5?` · ${s.pick!==null?f0(s.pick)+' pickups/day':''}`:'');if(stg===2||stg===5){ctx.strokeStyle=PAL['rj'];ctx.lineWidth=2.5;const w2=ctx.measureText(str).width+24;ctx.strokeRect(780-w2,ly-20,w2,30);}const w=ctx.measureText(str).width+16;pill(ctx,str,780-w/2,ly-5,'#2d5fa8','#fff',13);}
   if(sh&&!big&&G&&G.m){txt(ctx,`${sumLine(sim)} = ${fc(s.total)} min ÷ 60 = ${f1(s.total/60)} h · ${medLine(sim)}`,20,418,{s:12,w:700,c:PAL['cv-ink']});}
   if(G&&G.g){ctx.font='700 '+(12*Math.min(k,1.3))+'px '+FONT;const str=`Your guess: ${f1(G.g.gH)} h, ${f0(G.g.gP)} pickups/day`;const w=ctx.measureText(str).width+16;pill(ctx,str,780-w/2,24,'#9a5c00','#fff',12*Math.min(k,1.3));}},
  narrate(sim){const s=stats(sim),D=data(sim);
@@ -203,14 +209,14 @@ challenges:[
   {lvl:'ap',instant:true,q:'In the sample week, r = 0.59 between daily notifications and daily pickups (7 days). What can you conclude?',choices:['Notifications cause pickups','They tended to rise and fall together this week, but 7 days cannot show cause','There is no relationship'],correct:1,explain:'A positive r means busier notification days tended to be busier pickup days. With n = 7, one odd day can swing r a lot, and something else, like a school day versus a weekend, could drive both.'}
  ],
  tour:[
-  {title:'Your week, as bars',text:'Each bar is one day of screen time; the darker top is time after 10 p.m. The walkthrough uses the made-up sample week. If you typed in your own week, it comes back at the end.',focus:[55,50,735,340],pause:true,setup:sim=>BioLab.setValues(sim,{week:'sample',trig:50,awake:16})},
-  {title:'Add it up',text:'Total: 245 + 210 + 268 + 230 + 312 + 410 + 355 = 2,030 minutes. Divide by 60: 33.8 hours in one week.',pause:true},
-  {title:'Mean vs. median',text:'Mean = 2,030 ÷ 7 = 290 minutes (4h 50m). Median: put the days in order, and the middle one is Wednesday’s 268 minutes (4h 28m). The long weekend pulls the mean up; the median stays at a typical day.',pause:true},
-  {title:'Range and the busiest day',text:'Saturday is the busiest at 410 minutes, Tuesday the quietest at 210. Range = 410 − 210 = 200 minutes: the days swing by 3 hours 20 minutes.',pause:true},
-  {title:'Pickups and notifications',text:'Pickups average 630 ÷ 7 = 90 a day. Notifications average about 152 a day. Over 16 waking hours that is about 9.5 an hour: one every 6 or 7 minutes.',pause:true},
-  {title:'The 2-hour line',text:'The dashed amber line is 2 hours, the daily limit that the Colorado-led settlement with Meta sets for teen accounts. Every sample day is above it: 2,030 − 7 × 120 = 1,190 minutes over across the week.',pause:true},
-  {lvl:'honors',title:'Late nights',text:'The sample week has 285 minutes after 10 p.m. If half of that starts with a notification, a notification-free window from 10 p.m. cuts about 143 minutes a week, about 20 minutes a night.',pause:true},
-  {lvl:'ap',title:'How much the days swing',text:'Standard deviation: s = √(Σ(x − 290)² / 6) ≈ 73 minutes. A typical day sits about an hour and a quarter from the mean.',pause:true}
+  {title:'Your week, as bars',text:'Each bar is one day of screen time; the darker top is time after 10 p.m. The walkthrough uses the made-up sample week. If you typed in your own week, it comes back at the end.',focus:[55,50,735,340],pause:true,setup:sim=>{sim.tst=1;BioLab.setValues(sim,{week:'sample',trig:50,awake:16});}},
+  {title:'Add it up',text:'Total: 245 + 210 + 268 + 230 + 312 + 410 + 355 = 2,030 minutes. Divide by 60: 33.8 hours in one week.',pause:true,setup:sim=>{sim.tst=2;}},
+  {title:'Mean vs. median',text:'Mean = 2,030 ÷ 7 = 290 minutes (4h 50m). Median: put the days in order, and the middle one is Wednesday’s 268 minutes (4h 28m). The long weekend pulls the mean up; the median stays at a typical day.',pause:true,setup:sim=>{sim.tst=3;}},
+  {title:'Range and the busiest day',text:'Saturday is the busiest at 410 minutes, Tuesday the quietest at 210. Range = 410 − 210 = 200 minutes: the days swing by 3 hours 20 minutes.',pause:true,setup:sim=>{sim.tst=4;}},
+  {title:'Pickups and notifications',text:'Pickups average 630 ÷ 7 = 90 a day. Notifications average about 152 a day. Over 16 waking hours that is about 9.5 an hour: one every 6 or 7 minutes.',pause:true,setup:sim=>{sim.tst=5;}},
+  {title:'The 2-hour line',text:'The dashed amber line is 2 hours, the daily limit that the Colorado-led settlement with Meta sets for teen accounts. Every sample day is above it: 2,030 − 7 × 120 = 1,190 minutes over across the week.',pause:true,setup:sim=>{sim.tst=6;}},
+  {lvl:'honors',title:'Late nights',text:'The sample week has 285 minutes after 10 p.m. If half of that starts with a notification, a notification-free window from 10 p.m. cuts about 143 minutes a week, about 20 minutes a night.',pause:true,setup:sim=>{sim.tst=7;}},
+  {lvl:'ap',title:'How much the days swing',text:'Standard deviation: s = √(Σ(x − 290)² / 6) ≈ 73 minutes. A typical day sits about an hour and a quarter from the mean.',pause:true,setup:sim=>{sim.tst=8;}}
  ],
  lab:{bio:'<p><b>For your Screen Time Reflection:</b></p><ol><li>Type in your week (or use the sample week). Lock in your guesses, then compare.</li><li>Write down your total, your mean and your busiest day.</li><li>Press <b>Copy my table as CSV</b> to paste your numbers into your reflection or a spreadsheet. Nothing is saved here, so copy before you close the page.</li></ol><p>Write one SMART goal that uses one of these numbers.</p>',
   honors:'<p><b>Question:</b> Which tells your typical day better, the mean or the median?</p><ol><li>Compare the two for your week. Which days pull the mean away from the median?</li><li>Count the days over 2 hours, and the minutes over 2 hours.</li><li>Set your estimate for late-night use that starts with a notification. How many minutes would a notification-free window from 10 p.m. cut?</li></ol><p>Explain which number you would track for a SMART goal, and why.</p>',

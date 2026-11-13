@@ -482,6 +482,7 @@ html.embed .u-back,html.embed .pb-back+.none{display:none!important}
 .gs.on .gs-n{background:var(--rj);color:#fff}.gs.done .gs-n{background:var(--good);color:#fff}
 .gs-b{min-width:0}.gs-b p{margin:0 0 6px}.gs-t{font-weight:700}
 .gs-how{font-size:.92rem;color:var(--muted)}.gs-cmp{font-size:1rem}
+.gs-ans{margin:10px 0;padding:10px 12px;border-left:4px solid var(--rj,#b3202b);background:var(--card2,rgba(0,0,0,.03));border-radius:6px}.gs-ans p{margin:4px 0}.gs-ans-h{font-weight:700}.gs-take{font-size:.95rem}
 .dc-uses{margin:8px 0}.dc-uses ul{margin:4px 0 0;padding-left:1.1em}
 
 /* ---------- MathLab: Why are we learning this? ---------- */

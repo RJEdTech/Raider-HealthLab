@@ -77,7 +77,7 @@ const SIM={
   ctx.strokeStyle=PAL['g-line'];ctx.lineWidth=2.5;ctx.beginPath();for(let t=360;t<=1260;t+=10){const x=ax.X(t/60),y=ax.Y(f(t));t===360?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();
   if(atLeast('honors')){ctx.strokeStyle=PAL['s4'];ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(box.L,ax.Y(sim.p.limit));ctx.lineTo(box.L+box.W,ax.Y(sim.p.limit));ctx.stroke();ctx.setLineDash([]);txt(ctx,'Your target: '+sim.p.limit+' mg',box.L+8,ax.Y(sim.p.limit)-6,{s:12,w:700,c:PAL['s4']});}
   ctx.fillStyle=PAL['rj'];ctx.beginPath();ctx.arc(ax.X(q.t/60),ax.Y(f(q.t)),6,0,7);ctx.fill();txt(ctx,'Now: '+mg(f(q.t)),ax.X(q.t/60)+(q.t>1000?-10:10),ax.Y(f(q.t))-10,{s:12,w:700,c:PAL['rj'],a:q.t>1000?'right':'left'});},
- draw(sim,ctx,vdt,k){const sh=shown(sim),G=GS(sim),L=drinks(sim),h=hl(sim),bed=sim.p.bed,big=k>1.3,hon=atLeast('honors');
+ draw(sim,ctx,vdt,k){const stg=(sim.tour&&sim.tour.on)?(sim.tst||1):99,sh=shown(sim)&&stg>=2,G=stg>=99?GS(sim):null,L=drinks(sim),h=hl(sim),bed=sim.p.bed,big=k>1.3,hon=atLeast('honors');
   ctx.fillStyle=PAL['cv-bg'];ctx.fillRect(0,0,800,450);
   let peak=0;for(let t=X0;t<=X1;t+=5)peak=Math.max(peak,amtAt(L,t,h));
   const ymax=Math.max(100,Math.ceil(Math.max(peak,G?G.guess:0)*1.18/50)*50);
@@ -93,17 +93,21 @@ const SIM={
   ctx.strokeStyle=PAL['cv-ink'];ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(X(bed),T);ctx.lineTo(X(bed),B);ctx.stroke();
   txt(ctx,(big?'Bed ':'Bedtime, ')+clk(bed),X(bed)-6,T+14*k,{s:12*k,w:700,a:'right'});
   if(sh){/* the curve */
-   ctx.beginPath();ctx.moveTo(X(X0),Y(amtAt(L,X0,h)));for(let t=X0;t<=X1;t+=2)ctx.lineTo(X(t),Y(amtAt(L,t,h)));ctx.lineTo(X(X1),B);ctx.lineTo(X(X0),B);ctx.closePath();ctx.fillStyle=PAL['s6'];ctx.globalAlpha=.16;ctx.fill();ctx.globalAlpha=1;
-   ctx.strokeStyle=PAL['s6'];ctx.lineWidth=3;ctx.beginPath();for(let t=X0;t<=X1;t+=2){const y=Y(amtAt(L,t,h));t===X0?ctx.moveTo(X(t),y):ctx.lineTo(X(t),y);}ctx.stroke();
+   const q0=latestD(sim),tE=stg===2&&q0?Math.min(X1,q0.t+h*60):stg===3?bed:X1;
+   ctx.beginPath();ctx.moveTo(X(X0),Y(amtAt(L,X0,h)));for(let t=X0;t<=tE;t+=2)ctx.lineTo(X(t),Y(amtAt(L,t,h)));ctx.lineTo(X(tE),B);ctx.lineTo(X(X0),B);ctx.closePath();ctx.fillStyle=PAL['s6'];ctx.globalAlpha=.16;ctx.fill();ctx.globalAlpha=1;
+   if(stg===5){ctx.beginPath();ctx.moveTo(X(bed),B);for(let t=bed;t<=X1;t+=2)ctx.lineTo(X(t),Y(amtAt(L,t,h)));ctx.lineTo(X(X1),B);ctx.closePath();ctx.fillStyle=PAL['rj'];ctx.globalAlpha=.28;ctx.fill();ctx.globalAlpha=1;txt(ctx,'Still in you while you sleep',(X(bed)+R)/2,B-24*k,{s:14*k,w:700,c:PAL['rj'],a:'center'});}
+   ctx.strokeStyle=PAL['s6'];ctx.lineWidth=3;ctx.beginPath();for(let t=X0;t<=tE;t+=2){const y=Y(amtAt(L,t,h));t===X0?ctx.moveTo(X(t),y):ctx.lineTo(X(t),y);}ctx.stroke();
    /* half-life steps for the latest drink, when it is alone */
-   const q=latestD(sim);if(hon&&q&&L.length===1){ctx.strokeStyle=PAL['cv-soft'];ctx.setLineDash([4,5]);ctx.lineWidth=1.2;for(let n=1;n<=3;n++){const t=q.t+n*h*60;if(t>X1)break;const v=q.mg/Math.pow(2,n);ctx.beginPath();ctx.moveTo(X(t),B);ctx.lineTo(X(t),Y(v));ctx.lineTo(X(q.t),Y(v));ctx.stroke();const vb0=atBed(sim),px0=Math.min(X(bed)+78,R-72),py0=Math.max(T+40*k,Y(vb0)-24*k),clash=Math.abs(Y(v)-6-py0)<24*k&&X(t)+56>px0-75&&X(t)<px0+75;
+   const q=latestD(sim);if(stg===2&&q){const t=q.t+h*60,v=amtAt(L,t,h);ctx.strokeStyle=PAL['rj'];ctx.setLineDash([5,4]);ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(X(t),B);ctx.lineTo(X(t),Y(v));ctx.lineTo(X(q.t),Y(v));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=PAL['rj'];ctx.beginPath();ctx.arc(X(t),Y(v),6,0,7);ctx.fill();txt(ctx,'½ left: '+mg(v)+' at '+clk(t),X(t)+10,Y(v)-10,{s:14*k,w:700,c:PAL['rj']});}
+   if(stg===4){const v=amtAt(L,X1,h);ctx.fillStyle=PAL['rj'];ctx.beginPath();ctx.arc(X(X1),Y(v),6,0,7);ctx.fill();txt(ctx,'Still about '+mg(v)+' at '+clk(X1),X(X1)-10,Y(v)-14,{s:14*k,w:700,c:PAL['rj'],a:'right'});}
+   if(hon&&q&&L.length===1&&stg>=3){ctx.strokeStyle=PAL['cv-soft'];ctx.setLineDash([4,5]);ctx.lineWidth=1.2;for(let n=1;n<=3;n++){const t=q.t+n*h*60;if(t>X1)break;const v=q.mg/Math.pow(2,n);ctx.beginPath();ctx.moveTo(X(t),B);ctx.lineTo(X(t),Y(v));ctx.lineTo(X(q.t),Y(v));ctx.stroke();const vb0=atBed(sim),px0=Math.min(X(bed)+78,R-72),py0=Math.max(T+40*k,Y(vb0)-24*k),clash=Math.abs(Y(v)-6-py0)<24*k&&X(t)+56>px0-75&&X(t)<px0+75;
      if(!big&&!clash&&X(t)<R-56)txt(ctx,['½','¼','⅛'][n-1]+' left',X(t)+4,Y(v)-6,{s:12*k,c:PAL['cv-soft']});}ctx.setLineDash([]);}
    /* latest time for the target */
-   if(atLeast('ap')&&q){const v=lead(sim);if(v!==null&&v>0){const t=bed-v*60;if(t>=X0){ctx.strokeStyle=PAL['s4'];ctx.setLineDash([6,4]);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(X(t),T+22*k);ctx.lineTo(X(t),B);ctx.stroke();ctx.setLineDash([]);txt(ctx,(big?'≤'+sim.p.limit+' mg: ':'Latest for ≤ '+sim.p.limit+' mg: ')+clk2(Math.floor(t)),X(t)+(X(t)>560?-6:6),T+34*k,{s:12*k,w:700,c:PAL['s4'],a:X(t)>560?'right':'left'});}}}
+   if(atLeast('ap')&&q&&(stg>=99||stg===8)){const v=lead(sim);if(v!==null&&v>0){const t=bed-v*60;if(t>=X0){ctx.strokeStyle=PAL['s4'];ctx.setLineDash([6,4]);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(X(t),T+22*k);ctx.lineTo(X(t),B);ctx.stroke();ctx.setLineDash([]);txt(ctx,(big?'≤'+sim.p.limit+' mg: ':'Latest for ≤ '+sim.p.limit+' mg: ')+clk2(Math.floor(t)),X(t)+(X(t)>560?-6:6),T+34*k,{s:12*k,w:700,c:PAL['s4'],a:X(t)>560?'right':'left'});}}}
    /* bedtime amount */
-   const vb=atBed(sim);ctx.fillStyle=PAL['rj'];ctx.beginPath();ctx.arc(X(bed),Y(vb),7,0,7);ctx.fill();ctx.strokeStyle=PAL['card'];ctx.lineWidth=2;ctx.stroke();
-   pill(ctx,mg(vb)+' at bedtime',Math.min(X(bed)+(big?62:78),R-(big?62:72)),Math.max(T+40*k,Y(vb)-24*k),PAL['rj'],'#fff',13*Math.min(k,1.4));}
-  if(!sh){pill(ctx,'? mg at bedtime',Math.min(X(bed)+(big?62:70),R-(big?62:70)),T+44*k,PAL['muted'],'#fff',13*Math.min(k,1.4));}
+   if(stg>=3){const vb=atBed(sim);if(stg===3){ctx.strokeStyle=PAL['rj'];ctx.lineWidth=3;ctx.beginPath();ctx.arc(X(bed),Y(vb),14,0,7);ctx.stroke();}ctx.fillStyle=PAL['rj'];ctx.beginPath();ctx.arc(X(bed),Y(vb),7,0,7);ctx.fill();ctx.strokeStyle=PAL['card'];ctx.lineWidth=2;ctx.stroke();
+   pill(ctx,mg(vb)+' at bedtime',Math.min(X(bed)+(big?62:78),R-(big?62:72)),Math.max(T+40*k,Y(vb)-24*k),PAL['rj'],'#fff',13*Math.min(k,1.4));}}
+  if(!sh||stg<3){pill(ctx,'? mg at bedtime',Math.min(X(bed)+(big?62:70),R-(big?62:70)),T+44*k,PAL['muted'],'#fff',13*Math.min(k,1.4));}
   if(G){const y=Y(G.guess);ctx.strokeStyle=PAL['s4'];ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(X(bed)-12,y);ctx.lineTo(X(bed)+12,y);ctx.stroke();txt(ctx,(big?'Gut ':'Your gut: ')+mg(G.guess),X(bed)-16,y+4*k,{s:12*k,w:700,c:PAL['s4'],a:'right'});}
   /* drinks: markers and labels (stacked so they never overlap) */
   const sorted=L.slice().sort((a,b)=>a.t-b.t);let lastX=-1e9,lane=0,maxLane=0;
@@ -158,14 +162,14 @@ const SIM={
   {lvl:'ap',instant:true,q:'Moving a drink 2 hours earlier multiplies its bedtime amount by (1/2)^(2/5). About what fraction is that?',choices:['0.40','0.76','0.60','0.87'],correct:1,explain:'(1/2)^0.4 ≈ 0.758. Two hours earlier removes only about 24% of that drink’s bedtime caffeine. Timing helps, but slowly.'}
  ],
  tour:[
-  {title:'Your day',text:'The timeline runs from 6 AM to 6 AM the next morning. The blue triangle is a 16 oz energy drink (about 160 mg) at 3 PM. The black line is when you go to sleep: 10:30 PM.',pause:true,setup:sim=>BioLab.setValues(sim,{d1:'energy',t1:900,d2:'none',d3:'none',bed:1350,half:5,limit:50})},
-  {title:'Half every 5 hours',text:'Once you drink it, your liver clears the caffeine a fraction at a time. For many healthy adults, half is gone in about 5 hours: 160 mg falls to 80 mg by 8 PM.',pause:true},
-  {title:'At bedtime',text:'By 10:30 PM, 7.5 hours have passed: one and a half half-lives. 160 × (1/2)^1.5 ≈ 57 mg is still in you, more than a 12 oz cola’s worth (about 35 mg).',pause:true},
-  {title:'It never quite hits zero',text:'Each half-life takes away half of what is left, not a fixed amount. At 6 AM, 15 hours later, about 20 mg remains.',pause:true},
-  {lvl:'honors',title:'Why it matters for sleep',text:'Adenosine builds up while you are awake and makes you sleepy. Caffeine blocks its receptors. Those 57 mg are still blocking some of them as you try to fall asleep.',pause:true},
-  {lvl:'honors',title:'People differ',text:'Half-life varies by person, roughly 3 to 7 hours. With 7 hours, the same drink leaves about 76 mg at bedtime; with 3 hours, about 28 mg.',pause:true,setup:sim=>BioLab.setValues(sim,{half:7})},
-  {title:'Moving the drink',text:'Have the same drink at 1 PM instead and about 43 mg is left at bedtime. Two hours earlier cut it by only about a quarter. To be under 25 mg at 10:30 PM, you would need to drink it by about 9 AM.',pause:true,setup:sim=>BioLab.setValues(sim,{half:5,t1:780})},
-  {lvl:'ap',title:'Solving for the time',text:'For a target A at bedtime, a drink of A₀ needs t = h·log₂(A₀/A) hours. For 160 mg down to 50 mg: 5·log₂ 3.2 ≈ 8.4 hours, so drink it by 2:06 PM for a 10:30 PM bedtime.',pause:true,setup:sim=>BioLab.setValues(sim,{half:5,t1:900,limit:50})}
+  {title:'Your day',text:'The timeline runs from 6 AM to 6 AM the next morning. The blue triangle is a 16 oz energy drink (about 160 mg) at 3 PM. The black line is when you go to sleep: 10:30 PM.',pause:true,setup:sim=>{sim.tst=1;BioLab.setValues(sim,{d1:'energy',t1:900,d2:'none',d3:'none',bed:1350,half:5,limit:50});}},
+  {title:'Half every 5 hours',text:'Once you drink it, your liver clears the caffeine a fraction at a time. For many healthy adults, half is gone in about 5 hours: 160 mg falls to 80 mg by 8 PM.',pause:true,setup:sim=>{sim.tst=2;}},
+  {title:'At bedtime',text:'By 10:30 PM, 7.5 hours have passed: one and a half half-lives. 160 × (1/2)^1.5 ≈ 57 mg is still in you, more than a 12 oz cola’s worth (about 35 mg).',pause:true,setup:sim=>{sim.tst=3;}},
+  {title:'It never quite hits zero',text:'Each half-life takes away half of what is left, not a fixed amount. At 6 AM, 15 hours later, about 20 mg remains.',pause:true,setup:sim=>{sim.tst=4;}},
+  {lvl:'honors',title:'Why it matters for sleep',text:'Adenosine builds up while you are awake and makes you sleepy. Caffeine blocks its receptors. Those 57 mg are still blocking some of them as you try to fall asleep.',pause:true,setup:sim=>{sim.tst=5;}},
+  {lvl:'honors',title:'People differ',text:'Half-life varies by person, roughly 3 to 7 hours. With 7 hours, the same drink leaves about 76 mg at bedtime; with 3 hours, about 28 mg.',pause:true,setup:sim=>{sim.tst=6;BioLab.setValues(sim,{half:7});}},
+  {title:'Moving the drink',text:'Have the same drink at 1 PM instead and about 43 mg is left at bedtime. Two hours earlier cut it by only about a quarter. To be under 25 mg at 10:30 PM, you would need to drink it by about 9 AM.',pause:true,setup:sim=>{sim.tst=7;BioLab.setValues(sim,{half:5,t1:780});}},
+  {lvl:'ap',title:'Solving for the time',text:'For a target A at bedtime, a drink of A₀ needs t = h·log₂(A₀/A) hours. For 160 mg down to 50 mg: 5·log₂ 3.2 ≈ 8.4 hours, so drink it by 2:06 PM for a 10:30 PM bedtime.',pause:true,setup:sim=>{sim.tst=8;BioLab.setValues(sim,{half:5,t1:900,limit:50});}}
  ],
  lab:{bio:'<p><b>Question:</b> How much of your own caffeine is still with you at bedtime?</p><ol><li>Put in the drinks from one school day (yours, or a made-up day) and a bedtime. They stay on this page only.</li><li>Lock in your gut guess, then read the curve.</li><li>Move your latest drink 1, 2 and 3 hours earlier. Write down the bedtime amount each time.</li></ol><p>Write one sentence: in this model, which change cuts the bedtime amount the most?</p>',
   honors:'<p><b>Question:</b> How much does your own half-life matter?</p><ol><li>With your own drinks, record the bedtime amount at half-lives of 3, 4, 5, 6 and 7 hours.</li><li>Set a bedtime target and read the latest time for your latest drink at 3 and 7 hours.</li></ol><p>Explain, using adenosine, why the same drink can affect two friends’ sleep differently.</p>',

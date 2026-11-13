@@ -760,7 +760,9 @@ function gutRender(sim){const G=sim.def.gut,box=sim.ui.gut;if(!box)return;if(!G)
   let fm='';if(C&&S.m&&G.formula){try{fm=lvAny(G.formula,sim);}catch(e){console.error(e);}}
   const kr=C&&S.m&&K&&K.done&&Number.isFinite(K.value)?`<p class="gs-r">Your calculation: <b>${calcFmt(C,K.value)}</b>, ${K.correct?'right':'not quite'}.</p>`:'';
   h+=step(2,calcOpen?'Your turn, then the math':'The math',S.m?`<p class="gs-r">The math says <b>${S.m.label}</b>.</p>${kr}${G.how?`<p class="gs-how">${lvText(G.how)}</p>`:''}${fm?`<p class="gs-math">${fm}</p>`:''}`:`${calcOpen?'<div class="gs-calc"></div>':''}<button type="button" class="btn${S.g&&!(calcOpen&&!(K&&K.done))?' primary':''}" data-gut="solve"${S.g?'':' disabled'}>${G.mathLabel||'Show me the math'}</button>`,S.m?'done':(S.g?'on':'wait'));
-  h+=step(3,'What the math got you',S.g&&S.m?`<p class="gs-cmp">${G.compare(sim,S.g,S.m)}</p><button type="button" class="btn" data-gut="again">Try another one</button>`:'<p class="gs-wait">Lock in your gut answer, then let the math take a turn.</p>',S.g&&S.m?'done res':'wait');
+  const PA=sim.def.practical,an=S.g&&S.m&&sim.mode!=='guided'&&PA&&PA.answer?lvText(PA.answer):'',tk=an&&PA.takeaway?lvText(PA.takeaway):'';
+  const ans=an?`<div class="gs-ans"><p class="gs-ans-h">The opening question, answered</p><p>${an}</p>${tk?`<p class="gs-take"><b>Keep this:</b> ${tk}</p>`:''}</div>`:'';
+  h+=step(3,'What the math got you',S.g&&S.m?`<p class="gs-cmp">${G.compare(sim,S.g,S.m)}</p>${ans}<button type="button" class="btn" data-gut="again">Try another one</button>`:'<p class="gs-wait">Lock in your gut answer, then let the math take a turn.</p>',S.g&&S.m?'done res':'wait');
   box.innerHTML=h+'</div>';box.hidden=false;
   if(!S.g&&sim.mode!=='guided'){const t=box.querySelector('.gs-ctl');if(t)ctlPark(sim,G.controls||[],t);}
   const ch=box.querySelector('.gs-calc');if(ch&&!calcBox(sim,ch,{onDone:()=>{gutRender(sim);const v=box.querySelector('.gs-calc .verdict');if(v&&v.focus)v.focus({preventScroll:true});}}))ch.remove();
