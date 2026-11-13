@@ -1,6 +1,6 @@
 /* Raider HealthLab: the Health (HPE102) sequence comes from the RJ Health teachers' Canvas modules (Robbins, Bauer, Mihalco, McKeon; Fall 2025 to Spring 2027 shells, pulled Nov 7, 2026). */
 BioLab.COURSES = [
- {id:'health',name:'Health',blurb:'RJ Health (boys’ and girls’ divisions), in the order most sections cover it. Sleep is not its own unit in Canvas, so the sleep tools sit with stress and the brain, where they fit best.',
+ {id:'health',finals:[{"t": "Health final review", "units": [0, 1, 2, 3, 4, 5, 6], "note": "Covers every unit that has a Raider Labs tool. Your teacher decides what is on the final, so check the study guide."}],name:'Health',blurb:'RJ Health (boys’ and girls’ divisions), in the order most sections cover it. Sleep is not its own unit in Canvas, so the sleep tools sit with stress and the brain, where they fit best.',
   units:[
    {n:'Unit 1',t:'Introduction to health: the Health Triangle and SMART goals',ids:['screentime']},
    {n:'Unit 2',t:'Nutrition: labels, fad diets and supplements',ids:['checkclaim','fooddesert']},
