@@ -84,7 +84,7 @@ const REVIEWS={};BL.addReview=o=>{Object.assign(REVIEWS,o||{});};
 /* Math card layer (mathcards.js, Nov 16, 2026): per tool {f, v:[[symbol,meaning]], why, beh, solve:[...]}. Math type: `x` italic variable, ^{..} superscript, _{..} subscript.
    Shows the model with every variable named, why this model fits, how the function behaves, and the model solved for each unknown. */
 const MATHC={};BL.addMath=o=>{Object.assign(MATHC,o||{});};
-const mfx=s=>String(s||'').replace(/`([^`]*)`/g,'<i>$1</i>').replace(/\^\{([^}]*)\}/g,'<sup>$1</sup>').replace(/_\{([^}]*)\}/g,'<sub>$1</sub>');BL.mfx=mfx;
+const mfx=s=>{s=String(s||'').replace(/`([^`]*)`/g,'<i>$1</i>');let p;do{p=s;s=s.replace(/\^\{([^{}]*)\}/g,'<sup>$1</sup>').replace(/_\{([^{}]*)\}/g,'<sub>$1</sub>');}while(s!==p);return s;};BL.mfx=mfx;
 /* Typeset plain powers in displayed text (Nov 16, 2026): x^(t/h) and 2^bits become real superscripts. Runs on text nodes as they appear in a tool's section,
    skipping code, inputs and spreadsheet cells, where ^ is literal syntax. */
 const SUPRE=/([^\s^(]|\))\^(\((?:[^()]|\([^()]*\))*\)|[\u2212-]?[A-Za-z0-9](?:[A-Za-z0-9.]*[A-Za-z0-9])?)/g;
