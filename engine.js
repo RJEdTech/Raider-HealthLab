@@ -81,6 +81,38 @@ BL.register=function(def){if(!def||!def.id)return;DEFS.push(def);};
 const PRACT={};BL.addPractical=o=>{Object.assign(PRACT,o||{});};
 /* Review layer (review.js): questions and AP exam links per tool. Merged into the tool definitions at start. */
 const REVIEWS={};BL.addReview=o=>{Object.assign(REVIEWS,o||{});};
+/* Math card layer (mathcards.js, Nov 16, 2026): per tool {f, v:[[symbol,meaning]], why, beh, solve:[...]}. Math type: `x` italic variable, ^{..} superscript, _{..} subscript.
+   Shows the model with every variable named, why this model fits, how the function behaves, and the model solved for each unknown. */
+const MATHC={};BL.addMath=o=>{Object.assign(MATHC,o||{});};
+const mfx=s=>String(s||'').replace(/`([^`]*)`/g,'<i>$1</i>').replace(/\^\{([^}]*)\}/g,'<sup>$1</sup>').replace(/_\{([^}]*)\}/g,'<sub>$1</sub>');BL.mfx=mfx;
+/* Typeset plain powers in displayed text (Nov 16, 2026): x^(t/h) and 2^bits become real superscripts. Runs on text nodes as they appear in a tool's section,
+   skipping code, inputs and spreadsheet cells, where ^ is literal syntax. */
+const SUPRE=/([^\s^(]|\))\^(\((?:[^()]|\([^()]*\))*\)|[\u2212-]?[A-Za-z0-9](?:[A-Za-z0-9.]*[A-Za-z0-9])?)/g;
+const supText=s=>s.replace(SUPRE,(m,b,e)=>b+'<sup>'+(e[0]==='('?e.slice(1,-1):e)+'</sup>');BL.supText=supText;
+const SUPSKIP='code,kbd,pre,samp,input,textarea,select,option,script,style,canvas,[class^=rjs],[class*=" rjs"],[data-nosup]';
+function supify(root){if(!root||!root.ownerDocument)return;const t=root.nodeType===3?[root]:[];if(root.nodeType===1){const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);while(w.nextNode())t.push(w.currentNode);}
+  t.forEach(n=>{const v=n.nodeValue;if(!v||v.indexOf('^')<0)return;const p=n.parentElement;if(!p||p.closest(SUPSKIP))return;const e=esc(v),h=supText(e);if(h===e)return;
+    const sp=document.createElement('span');sp.innerHTML=h;n.replaceWith(...sp.childNodes);});}
+const SUPOBS=typeof MutationObserver==='function'?new MutationObserver(ms=>ms.forEach(m=>{if(m.type==='characterData')supify(m.target);else m.addedNodes.forEach(n=>supify(n));})):null;
+function mathcardHTML(M){const T=x=>mfx(lvText(x));let h='<summary><b>The math:</b> <span class="mc-f">'+T(M.f)+'</span></summary><div class="mc-b">';
+  if(M.v&&M.v.length)h+='<ul class="mc-v">'+M.v.map(([a,b])=>'<li><span class="mc-s">'+mfx(a)+'</span> '+mfx(b)+'</li>').join('')+'</ul>';
+  if(M.why)h+='<p><b>Why this model:</b> '+T(M.why)+'</p>';if(M.beh)h+='<p><b>How it behaves:</b> '+T(M.beh)+'</p>';
+  const so=Array.isArray(M.solve)?M.solve:M.solve?lvText(M.solve):null;if(so&&so.length)h+='<p><b>Solved for each unknown:</b></p><ul class="mc-so">'+so.map(x=>'<li>'+mfx(x)+'</li>').join('')+'</ul>';return h+'</div>';}
+/* "Letters used" under a walkthrough step (Nov 16, 2026, from Tom Flynn: students met B and P without being told what they were).
+   Lists each card variable that the step's text uses as math: right next to an operator, a digit, a bracket or a sub/superscript. */
+const MOP='=()÷×·/+−\\-^<>≤≥|*0-9\u2080-\u2089\u2070-\u2079\u00b2\u00b3\u00b9\u207f\u1d57\u2071';
+function stepVars(M,html){if(!M||!M.v)return '';const t=String(html||'').replace(/<sup>/g,'^').replace(/<[^>]+>/g,'').replace(/&[a-z]+;/g,' ');const out=[];
+  M.v.forEach(([a,b])=>{const syms=(String(a).match(/`[^`]+`/g)||[]).map(x=>x.slice(1,-1)).filter(x=>/^[A-Za-zα-ωΔΣ]$/.test(x));
+    const caps=!syms.length&&/^[A-Z]{2,5}$/.test(a)?[a]:[];const all=syms.concat(caps);if(!all.length)return;
+    const hit=all.some(x=>{const e=x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');if(x.length>1)return new RegExp('(^|[^A-Za-z])'+e+'([^A-Za-z]|$)').test(t);
+      const re=new RegExp('(^|[^A-Za-z])'+e+'(?![a-z])','g');let m;while((m=re.exec(t))){const i=m.index+m[1].length,pre=t.slice(Math.max(0,i-2),i),post=t.slice(i+1,i+3);
+        const op=new RegExp('['+MOP+']');if(op.test(pre.slice(-1))||op.test(post[0]||'')||(/ /.test(pre.slice(-1))&&op.test(pre[0]||''))||(/ /.test(post[0]||'')&&op.test(post[1]||''))||/^[A-Z]/.test(post))return true;}return false;});
+    if(hit)out.push('<span>'+mfx(a)+' = '+mfx(b)+'</span>');});
+  return out.length?'<p class="tb-vars"><b>Letters used:</b> '+out.join(' · ')+'</p>':'';}
+function mathcardVis(sim){const c=sim.ui.mcard;if(!c)return;const G=sim.def.gut,S=sim.gutS,locked=!!(S&&S.g);
+  const hide=sim.mode==='game'||sim.mode==='vlab'||(sim.mode==='guided'&&G&&GUIDED_GUT&&!locked&&!(sim.guide&&sim.guide.revealed));if(c.hidden!==hide)c.hidden=hide;
+  if(sim._mcMode!==sim.mode){sim._mcMode=sim.mode;if(sim.mode!=='guided'&&!hide)c.open=true;}
+  if(locked&&!sim._mcAuto){sim._mcAuto=true;if(!hide)c.open=true;}else if(!locked&&sim._mcAuto){sim._mcAuto=false;}}
 const bioOver=(t,n)=>!n?t:(t&&typeof t==='object')?Object.assign({},t,{bio:n}):(t?{bio:n,honors:t}:n);
 function applyPractical(d){const P=PRACT[d.id];if(!P)return;d.practical=P;
   if(P.lede)d.lede=bioOver(d.lede,P.lede);if(P.card)d.card=P.card;
@@ -159,7 +191,7 @@ function buildSim(sim){
   <div class="related" hidden></div>
   <p class="fb-line"><a class="fb-link" href="${fbUrl(d.tab)}" target="_blank" rel="noopener" data-tool="${d.tab}">Report a bug or request a feature</a><span class="fb-hint">Opens a short Microsoft Form with this tool already filled in. Sign in with your RJ account.</span></p>
   <details class="about embed-box"><summary>Embed this tool in Canvas</summary><div class="about-b embed-b"></div></details>`;
-  const ui=sim.ui;ui.sec=sec;ui.review=sec.querySelector('.review');ui.rvNote=sec.querySelector('.rv-note');ui.lede=sec.querySelector('.lede');ui.uses=sec.querySelector('.real-uses');ui.gut=sec.querySelector('.gutbox');ui.uses2=sec.querySelector('.ru-after');ui.stage=sec.querySelector('#'+id+'-stage');ui.graph=sec.querySelector('#'+id+'-graph');
+  const ui=sim.ui;ui.sec=sec;ui.review=sec.querySelector('.review');ui.rvNote=sec.querySelector('.rv-note');ui.lede=sec.querySelector('.lede');ui.uses=sec.querySelector('.real-uses');ui.gut=sec.querySelector('.gutbox');ui.uses2=sec.querySelector('.ru-after');if(d.math){ui.mcard=el('details',{class:'mathcard'});sec.querySelector('.ru-after').after(ui.mcard);}if(SUPOBS){supify(sec);SUPOBS.observe(sec,{childList:true,subtree:true,characterData:true});}ui.stage=sec.querySelector('#'+id+'-stage');ui.graph=sec.querySelector('#'+id+'-graph');
   ui.clock=sec.querySelector('.clock');ui.play=sec.querySelector('[data-act=play]');ui.ctrls=sec.querySelector('.controls');ui.read=sec.querySelector('.readouts');
   ui.pred=sec.querySelector('.predict');ui.info=sec.querySelector('.info');ui.tbl=sec.querySelector('.tbl');ui.gm=sec.querySelector('#'+id+'-gm');ui.gx=sec.querySelector('#'+id+'-gx');ui.gy=sec.querySelector('#'+id+'-gy');
   ui.toast=sec.querySelector('.toast');ui.ctl={};ui.ctlW={};ui.actB={};ui.tiles={};ui.cap=sec.querySelector('.cap');ui.scale=sec.querySelector('.scale');ui.lab=sec.querySelector('.lab');ui.skills=sec.querySelector('.sim-head .skills');
@@ -222,7 +254,7 @@ function tourGo(sim,i){const st=tourSteps(sim);if(!st.length)return;if(i>=st.len
   const first=!sim.tour||!sim.tour.on;if(first&&sim.def.tourReset!==false){const base={};(sim.def.controls||[]).forEach(c=>base[c.id]=c.def);applyValues(sim,base);resetSim(sim);if(sim.ch.phase==='running'){sim.ch.phase='ask';renderChallenge(sim);}}
   sim.tour={on:true,i};const s=st[i];if(s.setup)s.setup(sim);setSpeed(sim,s.speed!==undefined?s.speed:0.25);setRunning(sim,!s.pause);
   const b=sim.ui.tourbar;b.hidden=false;if(sim.ui.cap)sim.ui.cap.hidden=true;const off=(sim.guide&&sim.guide.keep&&st[0]&&st[0].hook)?1:0;b.querySelector('.tb-n').textContent='Step '+(i+1-off)+' of '+(st.length-off);b.querySelector('.tb-t').textContent=lvText(s.title);
-  b.querySelector('.tb-x').innerHTML=lvText(s.text);b.querySelector('[data-tour=back]').disabled=i<=off;b.querySelector('[data-tour=next]').textContent=i===st.length-1?'Finish':'Next';}
+  b.querySelector('.tb-x').innerHTML=lvText(s.text)+(sim.def.math?stepVars(sim.def.math,lvText(s.text)):'');b.querySelector('[data-tour=back]').disabled=i<=off;b.querySelector('[data-tour=next]').textContent=i===st.length-1?'Finish':'Next';}
 function tourExit(sim,why){const wasOn=sim.tour&&sim.tour.on;sim.tour={on:false,i:0};sim.ui.tourbar.hidden=true;if(sim.ui.cap)sim.ui.cap.hidden=false;setSpeed(sim,1);setRunning(sim,true);if(sim.def.onTourExit)sim.def.onTourExit(sim);
   if(wasOn&&sim.mode==='guided'&&sim.guide&&sim.guide.phase==='tour'&&why!=='level'&&why!=='mode'){
     const S=sim.gutS;if(why==='exit'){if(sim.guide.keep&&S&&S.snap){applyValues(sim,S.snap);resetSim(sim);if(S.keepG)S.g=S.keepG;}setMode(sim,'lab',true);}
@@ -684,9 +716,9 @@ function toCSV(sim){if(!sim.trials.length)return '';const cols=trialCols(sim),q=
 
 /* ---------- level-dependent refresh ---------- */
 function applyLevel(sim){const ui=sim.ui,d=sim.def;
-  ui.lede.textContent=lvText(d.lede);if(ui.uses){const P=d.practical,u=P&&P.uses?(Array.isArray(P.uses)?P.uses:lvText(P.uses)):null;const hk=P&&P.hook?lvText(P.hook):'';ui.uses.hidden=!(hk||(u&&u.length));const ul=u&&u.length?'<details class="ru-d"'+(USES_OPEN?' open':'')+'><summary>'+USES_LABEL+'</summary><ul>'+u.map(x=>'<li>'+x+'</li>').join('')+'</ul></details>':'';
+  ui.lede.textContent=lvText(d.lede);supify(ui.lede);if(ui.uses){const P=d.practical,u=P&&P.uses?(Array.isArray(P.uses)?P.uses:lvText(P.uses)):null;const hk=P&&P.hook?lvText(P.hook):'';ui.uses.hidden=!(hk||(u&&u.length));const ul=u&&u.length?'<details class="ru-d"'+(USES_OPEN?' open':'')+'><summary>'+USES_LABEL+'</summary><ul>'+u.map(x=>'<li>'+x+'</li>').join('')+'</ul></details>':'';
     if(USES_AFTER&&ui.uses2){ui.uses.hidden=!hk;ui.uses.innerHTML=hk?'<p class="ru-q">'+hk+'</p>':'';ui.uses2.hidden=!ul;ui.uses2.innerHTML=ul;}else ui.uses.innerHTML=(hk?'<p class="ru-q">'+hk+'</p>':'')+ul;}if(ui.scale)ui.scale.textContent=lvText(d.scale);
-  if(ui.skills)ui.skills.innerHTML='<b>The math:</b> '+lvText(d.skills);
+  if(ui.skills)ui.skills.innerHTML='<b>The math:</b> '+lvText(d.skills);if(ui.mcard){ui.mcard.innerHTML=mathcardHTML(d.math);if(sim.mode!=='guided')ui.mcard.open=true;mathcardVis(sim);}
   if(ui.lab)ui.lab.innerHTML='<p class="lab-h">Investigation</p>'+lvText(d.lab);
   gutRender(sim);
   if(sim.tour&&sim.tour.on)tourExit(sim,'level');
@@ -1034,7 +1066,12 @@ function buildHome(){const units=document.getElementById('units');units.innerHTM
 
 /* Styles for the skills line, "Your turn" calculations, num challenges and the reveal's math line. Kept here (theme tokens only)
    so every site that shares this engine gets them without a CSS change. */
-const ENGINE_CSS=`.sim-head .skills{margin:0 0 6px;font-size:14px;line-height:1.4;color:var(--fg)}.sim-head .skills b{color:var(--rj-ink);font-weight:700;margin-right:.2em}
+const ENGINE_CSS=`.mathcard{margin:8px 0 10px;padding:8px 14px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--rj-ink);border-radius:8px;line-height:1.5;font-size:15px}
+.mathcard summary{cursor:pointer}.mathcard summary b{color:var(--rj-ink)}.mathcard .mc-f,.mathcard .mc-s,.mathcard .mc-so{font-family:"Cambria Math","STIX Two Math","Times New Roman",serif}.mathcard .mc-f{font-size:1.15em}
+.mathcard i{font-family:"Cambria Math","STIX Two Math","Times New Roman",serif;font-size:1.08em}.mathcard p{margin:6px 0}.mc-v{list-style:none;margin:6px 0;padding:0;display:flex;flex-wrap:wrap;gap:2px 18px}
+.tb-vars{margin:8px 0 0;font-size:14px;line-height:1.5;color:var(--fg)}.tb-vars b{color:var(--rj-ink)}.tb-vars span{white-space:nowrap}.tb-vars i{font-family:"Cambria Math","STIX Two Math","Times New Roman",serif;font-size:1.08em}
+.mc-s{font-weight:700;margin-right:.15em}.mc-s::after{content:" ="}.mc-so{margin:2px 0 4px;padding-left:1.3em;font-size:1.05em}
+.sim-head .skills{margin:0 0 6px;font-size:14px;line-height:1.4;color:var(--fg)}.sim-head .skills b{color:var(--rj-ink);font-weight:700;margin-right:.2em}
 .calc-q{margin:4px 0 10px;font-size:16px;line-height:1.5}.gs .calc-q{font-size:inherit}.calc .rv-num{margin:0 0 8px}.calc .row{align-items:center}
 .calc .verdict{margin:6px 0 8px}.calc .verdict:focus{outline:0}.calc-steps{margin:6px 0 8px;padding:8px 12px;background:var(--card);border:1px solid var(--line);border-radius:8px;line-height:1.5}
 .calc .rv-steps{margin:6px 0 8px}.calc-ans{margin:6px 0 10px}.gs-calc{margin:0 0 10px}.ch-num{margin:8px 0 10px}.ch-num .vl-in{width:10em}
@@ -1045,7 +1082,7 @@ BL.start=function(){
   engineCss();
   if(EMBED)document.documentElement.classList.add('embed');
   homeEl=document.getElementById('home');simsEl=document.getElementById('sims');jumpEl=document.getElementById('jump');backEl=document.getElementById('back');
-  DEFS.forEach(d=>{applyPractical(d);if(REVIEWS[d.id])d.review=REVIEWS[d.id];sims[d.id]=makeSim(d);});
+  DEFS.forEach(d=>{applyPractical(d);if(REVIEWS[d.id])d.review=REVIEWS[d.id];if(MATHC[d.id])d.math=MATHC[d.id];sims[d.id]=makeSim(d);});
   unitEl=el('section',{id:'unitpage',class:'unitpage'});unitEl.hidden=true;simsEl.parentNode.insertBefore(unitEl,simsEl);
   readPal();buildHome();
   const lvlBtns=[...document.querySelectorAll('#lvl button')];
@@ -1069,7 +1106,7 @@ BL.start=function(){
       else if(d.timeless){sim.t+=rdt;challengeTick(sim);}
       const vdt=(sim.running||stepping||d.timeless)?rdt*sim.speed:0;sim.vt+=vdt;drawStageTo(sim,sim.ui.stage,vdt);
       if(sim.game){gameTick(sim);}
-      acc+=rdt;if(acc>0.1){acc=0;updateReadouts(sim);if(sim.mode!=='vlab'&&(sim.gmode==='live'||d.timeless))drawGraph(sim);if(sim.game)gameClock(sim);}}
+      acc+=rdt;if(acc>0.1){acc=0;mathcardVis(sim);updateReadouts(sim);if(sim.mode!=='vlab'&&(sim.gmode==='live'||d.timeless))drawGraph(sim);if(sim.game)gameClock(sim);}}
     requestAnimationFrame(frame);}
   requestAnimationFrame(frame);
 };
