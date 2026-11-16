@@ -39,7 +39,12 @@ const PAL={};
 const PAL_KEYS=['cv-bg','cv-bg2','cv-ims','cv-matrix','cv-head','cv-tail','cv-ink','cv-soft','cv-h','cv-e','cv-estroke','cv-atp','cv-dnp','cv-sol','cv-enz','cv-enzd','cv-sub','cv-prod','cv-inc','cv-inn','cv-water','cv-glass','cv-leaf','cv-leaf2','cv-bubble','cv-bstroke','cv-bench','cv-lamp','cv-ruler','g-line','g-fill','g-grid','g-axis','g-dot','s1','s2','s3','s4','s5','s6','card','card2','line','fg','muted','bg','rj'];
 function readPal(){const cs=getComputedStyle(document.documentElement);PAL_KEYS.forEach(k=>{PAL[k]=cs.getPropertyValue('--'+k).trim()||'#888';});}
 function rr(ctx,x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
-function txt(ctx,s,x,y,o){o=o||{};ctx.font=(o.w||400)+' '+(o.s||13)+'px '+FONT;ctx.fillStyle=o.c||PAL['cv-ink'];ctx.textAlign=o.a||'left';ctx.textBaseline=o.b||'alphabetic';ctx.fillText(s,x,y);}
+function txt(ctx,s,x,y,o){o=o||{};const w=(o.w||400)+' ',z=o.s||13;ctx.font=w+z+'px '+FONT;ctx.fillStyle=o.c||PAL['cv-ink'];ctx.textAlign=o.a||'left';ctx.textBaseline=o.b||'alphabetic';
+  s=String(s);if(s.indexOf('^')<0||typeof SUPRE==='undefined'){ctx.fillText(s,x,y);return;}
+  /* Canvas powers (Nov 16, 2026): x^(t/h) and 2^bits are drawn with a raised, smaller exponent. */
+  const P=[];let last=0;s.replace(SUPRE,(m,bs,e,i)=>{P.push([s.slice(last,i)+bs,0]);P.push([e[0]==='('?e.slice(1,-1):e,1]);last=i+m.length;return m;});if(!P.length){ctx.fillText(s,x,y);return;}P.push([s.slice(last),0]);
+  const F=q=>q?w+(z*0.72)+'px '+FONT:w+z+'px '+FONT;let W=0;P.forEach(p=>{ctx.font=F(p[1]);p[2]=ctx.measureText(p[0]).width;W+=p[2];});
+  let cx=o.a==='center'?x-W/2:(o.a==='right'||o.a==='end')?x-W:x;ctx.textAlign='left';P.forEach(p=>{ctx.font=F(p[1]);ctx.fillText(p[0],cx,y-(p[1]?z*0.38:0));cx+=p[2];});ctx.font=F(0);ctx.textAlign=o.a||'left';}
 function pill(ctx,s,x,y,bg,fg,size){size=size||12;ctx.font='700 '+size+'px '+FONT;const w=ctx.measureText(s).width+size*1.1,h=size*1.7;rr(ctx,x-w/2,y-h/2,w,h,h/2);ctx.fillStyle=bg;ctx.fill();txt(ctx,s,x,y+1,{s:size,w:700,c:fg,a:'center',b:'middle'});}
 function polyline(pts){const segs=[];let L=0;for(let i=1;i<pts.length;i++){const dx=pts[i][0]-pts[i-1][0],dy=pts[i][1]-pts[i-1][1],l=Math.hypot(dx,dy);segs.push({a:pts[i-1],dx,dy,l,s:L});L+=l;}
   return {L,at(d){for(const g of segs){if(d<=g.s+g.l){const t=(d-g.s)/g.l;return [g.a[0]+g.dx*t,g.a[1]+g.dy*t];}}const p=pts[pts.length-1];return [p[0],p[1]];}};}
