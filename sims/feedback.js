@@ -189,7 +189,7 @@ const SIM={
   return `The response lands late, so by the time it acts the gap has already closed and it keeps pushing: <b>it overshoots ${Math.round(os)}% of the push</b> past the set point. ${offText(sim,g)}.`;},
  gut:{better:'lower',controls:['gain'],
   ask:{bio:'Drag <b>Response strength</b> here to how hard you think the loop should push back to get into the green target band fastest. Too gentle is slow, too hard can overshoot. Then lock it in.',
-   honors:'Before you look at the delay: set <b>Response strength</b> to the gain you think returns the loop to its band fastest, then lock it in.'},
+   honors:'Before you look at the delay: set Response strength (the gain: how hard the loop pushes back) to the value you think gets it back into the green target band fastest, then lock it in.'},
   lock(sim){const v=score(sim);return {v,gain:sim.p.gain,s:sgn(sim),label:`gain ${fmtNum(sim.p.gain,2)}: ${offText(sim,sim.p.gain)}`};},
   solve(sim){const C=sc(sim);if(C.kind!=='end'&&sgn(sim)>0)sim.p.sign='neg';const b=bestGain(sim);sim.p.gain=b.g;return {v:b.v,gain:b.g,s:sgn(sim),label:`gain ${fmtNum(b.g,2)}${sgn(sim)<0&&C.kind!=='end'&&sim.gutS&&sim.gutS.g&&sim.gutS.g.s>0?', with negative feedback':''}: ${offText(sim,b.g)}`};},
   hint:{bio:'Lock in your gain. Then you will work out one point on the curve yourself.'},

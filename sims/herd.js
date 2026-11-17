@@ -125,7 +125,7 @@ const SIM={
   return `Each case passes measles to ${r.toFixed(2)} others on average, so it grows. <b>About ${n0(s)} ${c.who} catch it</b>, and the threshold is ${f1(nd)}%.`+cantTxt;},
  gut:{better:'lower',controls:['cov'],
   ask:{bio:'Your school has 1,000 students, and one student comes back from a trip with measles. By feel, drag the slider here to the lowest share of students who need two doses of the vaccine so that measles cannot spread through the school. Then lock it in.',
-   honors:'Before the curve appears: set the coverage you think is the lowest that stops measles from spreading here, then lock it in.'},
+   honors:'Before the curve appears: set the share of people vaccinated (the coverage) to the lowest you think stops measles from spreading here, then lock it in.'},
   lock(sim){const cv=COV(sim);return {v:Math.abs(cv-need(sim)),cov:cv,label:`${f1(cv)}% vaccinated`};},
   solve(sim){const nd=need(sim),cv=Math.min(nd,cap(sim));sim.p.cov=Math.round(cv*1000)/1000;return {v:Math.abs(COV(sim)-nd),cov:COV(sim),label:nd<=cap(sim)?`${f1(nd)}% vaccinated`:`${f1(nd)}% would be needed, but only ${f1(cap(sim))}% can be vaccinated`};},
   hint:{bio:'Lock in your gut answer. Then you will work out the threshold yourself.'},
