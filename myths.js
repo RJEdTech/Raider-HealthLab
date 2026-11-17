@@ -66,3 +66,57 @@ whosad:[
  {k:'teen',s:'In the U.S., COPPA limits collecting data from children under 13.',fact:true,why:'Sites need parental consent to collect personal data from kids under 13.'}
 ]
 });
+
+/* Batch 3 (Nov 18, 2026): the nicotine section. */
+BioLab.addMyths({
+hooked:[
+ {k:'choice',s:'If you only use pouches on weekends or at parties, you can’t get addicted.',fact:false,why:'Teen brains adapt quickly, and many people who start occasionally end up using daily. The craving loop builds with repeated use, not a set schedule.'},
+ {k:'relief',s:'The calm feeling from a pouch is mostly relief from the craving that nicotine itself caused.',fact:true,why:'In a dependent brain, falling nicotine levels feel like stress. The next dose ends that, so it feels calming.'},
+ {k:'recover',s:'Once the brain adapts to nicotine, the change is permanent.',fact:false,why:'Brain scans of people who quit found nicotine receptor levels back to normal by about 6 to 12 weeks.'}
+],
+freebase:[
+ {k:'mg',s:'Two pouches with the same mg on the label deliver the same nicotine.',fact:false,why:'pH changes how much is in the free form that crosses the gums. A CDC study found free nicotine from 0.17 to 6.07 mg per pouch.'},
+ {k:'soda',s:'Some pouches contain baking soda (sodium bicarbonate).',fact:true,why:'It is a pH adjuster: a base that raises pH so more nicotine is absorbed.'},
+ {k:'tobfree',s:'“Tobacco-free” means nicotine-free.',fact:false,why:'Tobacco-free pouches still contain nicotine, extracted from tobacco or made in a lab.'}
+],
+flavors:[
+ {k:'unfl',s:'A pouch labeled for use where flavors are banned can still contain flavor chemicals.',fact:true,why:'Researchers found Zyn Chill, sold as “Flavor-Ban Approved,” contained WS-3, a cooling agent.'},
+ {k:'taste',s:'Flavors only change the taste, not how hooked you get.',fact:false,why:'Cooling flavors mask harshness, flavors become learned cues for craving, and in mice menthol boosted nicotine’s effect on dopamine cells.'},
+ {k:'mint',s:'Mint is the most popular pouch flavor among teens.',fact:true,why:'About 59% of teen pouch users use mint most often (Monitoring the Future, 2025).'}
+],
+zynviral:[
+ {k:'paid',s:'If you see a product all over your feed, the company must be paying for it.',fact:false,why:'Unpaid posts by users can spread a product widely. The company still profits.'},
+ {k:'rule',s:'FDA rules on Zyn ads also apply to videos regular users post.',fact:false,why:'The marketing limits cover the company’s own advertising.'},
+ {k:'grow',s:'A trend where each post inspires 2 new ones passes 2 million views in about 10 rounds, starting from one 1,000-view video.',fact:true,why:'1,000 × (2¹¹ − 1) ≈ 2.05 million.'}
+],
+lifetime:[
+ {k:'small',s:'A can every couple of days adds up to more than $1,000 a year.',fact:true,why:'3.5 cans a week × 52 × $5.69 ≈ $1,036.'},
+ {k:'adults',s:'Most people who become regular nicotine users start as adults.',fact:false,why:'For cigarettes, 88% of adult daily smokers first smoked by 18 and 99% by 26 (Surgeon General, 2012).'},
+ {k:'all',s:'All of the money you pay for a can goes to the company that makes it.',fact:false,why:'Stores, distributors and taxes take a share. In 2024 Zyn’s maker got about $3.23 per can.'}
+],
+replacement:[
+ {k:'memo',s:'Tobacco company documents show they studied teenagers as future customers.',fact:true,why:'A 1981 Philip Morris report called the teenager “tomorrow’s potential regular customer.”'},
+ {k:'court',s:'No court has ever found that tobacco companies marketed to young people.',fact:false,why:'In 2006 a federal judge found the major cigarette companies did so to recruit “replacement smokers.”'},
+ {k:'pouch',s:'It has been proven that pouch companies grow mainly by recruiting teens.',fact:false,why:'For pouches, the evidence is still being gathered. Many users also use other tobacco, and youth use has risen. Say what the data shows, no more.'}
+],
+playbook:[
+ {k:'settle',s:'When a company settles a case, it always admits it broke the law.',fact:false,why:'Settlements usually end a case without an admission. Investigation findings are still evidence.'},
+ {k:'camel',s:'In a 1991 study, most 6-year-olds could match Joe Camel with cigarettes.',fact:true,why:'91.3% did, about as many as matched the Disney logo with Mickey Mouse.'},
+ {k:'new',s:'Social media marketing of nicotine is a completely new idea.',fact:false,why:'In 1929 a staged parade got free newspaper coverage. Getting attention without paying for ads is an old move.'}
+],
+vapegraph:[
+ {k:'pts',s:'Going from 11.7% to 27.5% is a 15.8% increase.',fact:false,why:'It is 15.8 percentage points, a 135% increase.'},
+ {k:'before',s:'Teen vaping was already rising before JUUL launched.',fact:true,why:'It went from 1.5% in 2011 to 13.4% in 2014; JUUL launched in 2015.'},
+ {k:'gone',s:'Teen vaping is over: almost no high schoolers vape now.',fact:false,why:'About 7.1% of high schoolers vaped in 2025, roughly 1 in 14.'}
+],
+betterthan:[
+ {k:'healthy',s:'Zyn is “healthy smoking.”',fact:false,why:'Compared with smoking it lowers some risks; compared with not using nicotine, it adds addiction, heart effects and mouth harm.'},
+ {k:'quit',s:'Zyn is an FDA-approved quit-smoking medicine.',fact:false,why:'It is authorized to be sold, not approved as a medicine. Approved quit aids include the patch, gum and lozenge.'},
+ {k:'claim',s:'The FDA lets Zyn say it is lower risk than cigarettes.',fact:true,why:'In June 2026, for use instead of cigarettes, while stating that does not mean it is safe.'}
+],
+quitworks:[
+ {k:'95',s:'Teen cigarette smoking has fallen by about 95% since 1997.',fact:true,why:'From 36.4% (1997) to 1.8% (2025).'},
+ {k:'scare',s:'Scary warnings were the main thing that cut teen smoking.',fact:false,why:'Prices, marketing limits, youth-made campaigns like truth and age-21 laws all had measurable effects.'},
+ {k:'help',s:'Text-message quit programs have been shown to help teens quit vaping.',fact:true,why:'In a 2024 randomized trial, teens in Truth Initiative’s program were 35% more likely to quit.'}
+]
+});
