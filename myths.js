@@ -80,6 +80,11 @@ freebase:[
  {k:'soda',s:'Some pouches contain baking soda (sodium bicarbonate).',fact:true,why:'It is a pH adjuster: a base that raises pH so more nicotine is absorbed.'},
  {k:'tobfree',s:'“Tobacco-free” means nicotine-free.',fact:false,why:'Tobacco-free pouches still contain nicotine, extracted from tobacco or made in a lab.'}
 ],
+streaks:[
+ {k:'safe',s:'If you and a friend each snap 99% of days, a 100-day streak is almost certain.',fact:false,why:'Each day survives with chance 0.9801, and 0.9801¹⁰⁰ is only about 13%.'},
+ {k:'likes',s:'In a brain-scan study, teens were more likely to like a photo that already showed many likes.',fact:true,why:'Sherman et al. (2016) assigned like counts at random; the same photo got more likes when it already showed many.'},
+ {k:'court',s:'No court has ever found a social media company responsible for how it designed its app.',fact:false,why:'In March 2026 a Los Angeles jury found Meta and YouTube negligent in their design. The companies can appeal.'}
+],
 goviral:[
  {k:'paid',s:'If you see a product all over your feed, the company must be paying for it.',fact:false,why:'Unpaid posts by users can spread a product widely. The company still profits.'},
  {k:'rule',s:'Rules on a company’s ads also apply to videos regular users post about its product.',fact:false,why:'Marketing rules cover the company’s own advertising, not fans’ posts.'},
@@ -94,11 +99,6 @@ playbook:[
  {k:'settle',s:'When a company settles a case, it always admits it broke the law.',fact:false,why:'Settlements usually end a case without an admission. Investigation findings are still evidence.'},
  {k:'camel',s:'In a 1991 study, most 6-year-olds could match Joe Camel with cigarettes.',fact:true,why:'91.3% did, about as many as matched the Disney logo with Mickey Mouse.'},
  {k:'new',s:'Social media marketing of nicotine is a completely new idea.',fact:false,why:'In 1929 a staged parade got free newspaper coverage. Getting attention without paying for ads is an old move.'}
-],
-vapegraph:[
- {k:'pts',s:'Going from 11.7% to 27.5% is a 15.8% increase.',fact:false,why:'It is 15.8 percentage points, a 135% increase.'},
- {k:'before',s:'Teen vaping was already rising before JUUL launched.',fact:true,why:'It went from 1.5% in 2011 to 13.4% in 2014; JUUL launched in 2015.'},
- {k:'gone',s:'Teen vaping is over: almost no high schoolers vape now.',fact:false,why:'About 7.1% of high schoolers vaped in 2025, roughly 1 in 14.'}
 ],
 betterthan:[
  {k:'healthy',s:'Zyn is “healthy smoking.”',fact:false,why:'Compared with smoking it lowers some risks; compared with not using nicotine, it adds addiction, heart effects and mouth harm.'},

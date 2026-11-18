@@ -62,6 +62,22 @@ playbook:{questions:[
    "Settlements are not verdicts.",
    "Investigation findings remain evidence."
   ]
+ },
+ {
+  "id": "p5",
+  "kind": "bio",
+  "lvl": "bio",
+  "q": "In 2019 the FDA sent JUUL a warning letter. What did it say JUUL did wrong?",
+  "choices": [
+   "Claimed it was safer than cigarettes without FDA permission",
+   "Sold it to adults",
+   "Used too little nicotine"
+  ],
+  "correct": 0,
+  "steps": [
+   "A company needs an FDA order before it can market a tobacco product as lower risk.",
+   "The letter cited a school talk where a JUUL speaker called it “totally safe.”"
+  ]
  }
 ]}
 });

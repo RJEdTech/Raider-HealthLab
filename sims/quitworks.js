@@ -20,7 +20,7 @@ const whatIf=sim=>2.3*Math.pow(1-0.065,sim.p.price/10);
 function clearGut(sim){if(sim.gutS&&(sim.gutS.g||sim.gutS.m)){sim.gutS.g=null;sim.gutS.m=null;if(BioLab.gutRender)BioLab.gutRender(sim);}}
 
 const SIM={
- id:'quitworks',hash:'quitworks',apUnit:7,order:10,tab:'Success story: how teen smoking fell 95%',kind:'Learning tool',prereq:['vapegraph'],next:['hooked'],
+ id:'quitworks',hash:'quitworks',apUnit:7,order:10,tab:'Success story: how teen smoking fell 95%',kind:'Learning tool',prereq:['betterthan'],next:['hooked'],
  skills:{bio:'Percent decrease and percent of a number · Algebra 1 (Unit 1), Health (Unit 7)',honors:'Percent decrease; elasticity as a rate (6–7% fewer per 10% price) · Algebra 1, Economics, Health',ap:'Compounding a percent effect: (1 − 0.065)^(p/10); evaluating a dose-response study · Algebra 2 (Unit 5), AP Macroeconomics, AP Statistics'},
  card:'Teen smoking fell from more than 1 in 3 to under 2 in 100. See it in a school of 1,600, find what worked, and test what it could mean for pouches.',
  title:'A success story: how teen smoking fell 95%',
