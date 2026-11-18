@@ -72,6 +72,7 @@ BioLab.addMyths({
 hooked:[
  {k:'choice',s:'If you only use pouches on weekends or at parties, you can’t get addicted.',fact:false,why:'Teen brains adapt quickly, and many people who start occasionally end up using daily. The craving loop builds with repeated use, not a set schedule.'},
  {k:'relief',s:'The calm feeling from a pouch is mostly relief from the craving that nicotine itself caused.',fact:true,why:'In a dependent brain, falling nicotine levels feel like stress. The next dose ends that, so it feels calming.'},
+ {k:'taste',s:'Flavors only change the taste, not how hooked you get.',fact:false,why:'Cooling flavors mask harshness, a flavor paired with nicotine becomes a learned cue for craving, and in mice menthol boosted nicotine’s effect on dopamine cells.'},
  {k:'recover',s:'Once the brain adapts to nicotine, the change is permanent.',fact:false,why:'Brain scans of people who quit found nicotine receptor levels back to normal by about 6 to 12 weeks.'}
 ],
 freebase:[
@@ -79,25 +80,15 @@ freebase:[
  {k:'soda',s:'Some pouches contain baking soda (sodium bicarbonate).',fact:true,why:'It is a pH adjuster: a base that raises pH so more nicotine is absorbed.'},
  {k:'tobfree',s:'“Tobacco-free” means nicotine-free.',fact:false,why:'Tobacco-free pouches still contain nicotine, extracted from tobacco or made in a lab.'}
 ],
-flavors:[
- {k:'unfl',s:'A pouch labeled for use where flavors are banned can still contain flavor chemicals.',fact:true,why:'Researchers found Zyn Chill, sold as “Flavor-Ban Approved,” contained WS-3, a cooling agent.'},
- {k:'taste',s:'Flavors only change the taste, not how hooked you get.',fact:false,why:'Cooling flavors mask harshness, flavors become learned cues for craving, and in mice menthol boosted nicotine’s effect on dopamine cells.'},
- {k:'mint',s:'Mint is the most popular pouch flavor among teens.',fact:true,why:'About 59% of teen pouch users use mint most often (Monitoring the Future, 2025).'}
-],
-zynviral:[
+goviral:[
  {k:'paid',s:'If you see a product all over your feed, the company must be paying for it.',fact:false,why:'Unpaid posts by users can spread a product widely. The company still profits.'},
- {k:'rule',s:'FDA rules on Zyn ads also apply to videos regular users post.',fact:false,why:'The marketing limits cover the company’s own advertising.'},
+ {k:'rule',s:'Rules on a company’s ads also apply to videos regular users post about its product.',fact:false,why:'Marketing rules cover the company’s own advertising, not fans’ posts.'},
  {k:'grow',s:'A trend where each post inspires 2 new ones passes 2 million views in about 10 rounds, starting from one 1,000-view video.',fact:true,why:'1,000 × (2¹¹ − 1) ≈ 2.05 million.'}
 ],
 lifetime:[
- {k:'small',s:'A can every couple of days adds up to more than $1,000 a year.',fact:true,why:'3.5 cans a week × 52 × $5.69 ≈ $1,036.'},
+ {k:'small',s:'An energy drink every couple of days adds up to about $600 a year.',fact:true,why:'3.5 cans a week × 52 × $3.29 ≈ $599.'},
  {k:'adults',s:'Most people who become regular nicotine users start as adults.',fact:false,why:'For cigarettes, 88% of adult daily smokers first smoked by 18 and 99% by 26 (Surgeon General, 2012).'},
  {k:'all',s:'All of the money you pay for a can goes to the company that makes it.',fact:false,why:'Stores, distributors and taxes take a share. In 2024 Zyn’s maker got about $3.23 per can.'}
-],
-replacement:[
- {k:'memo',s:'Tobacco company documents show they studied teenagers as future customers.',fact:true,why:'A 1981 Philip Morris report called the teenager “tomorrow’s potential regular customer.”'},
- {k:'court',s:'No court has ever found that tobacco companies marketed to young people.',fact:false,why:'In 2006 a federal judge found the major cigarette companies did so to recruit “replacement smokers.”'},
- {k:'pouch',s:'It has been proven that pouch companies grow mainly by recruiting teens.',fact:false,why:'For pouches, the evidence is still being gathered. Many users also use other tobacco, and youth use has risen. Say what the data shows, no more.'}
 ],
 playbook:[
  {k:'settle',s:'When a company settles a case, it always admits it broke the law.',fact:false,why:'Settlements usually end a case without an admission. Investigation findings are still evidence.'},
@@ -118,5 +109,24 @@ quitworks:[
  {k:'95',s:'Teen cigarette smoking has fallen by about 95% since 1997.',fact:true,why:'From 36.4% (1997) to 1.8% (2025).'},
  {k:'scare',s:'Scary warnings were the main thing that cut teen smoking.',fact:false,why:'Prices, marketing limits, youth-made campaigns like truth and age-21 laws all had measurable effects.'},
  {k:'help',s:'Text-message quit programs have been shown to help teens quit vaping.',fact:true,why:'In a 2024 randomized trial, teens in Truth Initiative’s program were 35% more likely to quit.'}
+]
+});
+
+/* Batch 4 (Nov 18, 2026): Hooked by design. */
+BioLab.addMyths({
+buynow:[
+ {k:'timer',s:'If a countdown timer runs out, the deal is always gone.',fact:false,why:'The FTC found timers on offers that were not really time-limited. Sometimes the clock just resets.'},
+ {k:'fees',s:'Fees that show up only at checkout are a known sales tactic with a name.',fact:true,why:'It is called drip pricing: a low price first, fees later.'},
+ {k:'p4',s:'Pay-in-4 makes things cheaper.',fact:false,why:'The total is the same or more if you pay late. It only makes the number look smaller.'}
+],
+blisspoint:[
+ {k:'more',s:'The sweeter a drink, the more people like it.',fact:false,why:'Liking peaks and then falls. Companies look for the peak, the bliss point.'},
+ {k:'tsp',s:'A 20 oz cola has more than twice the AHA’s daily added-sugar limit for teens.',fact:true,why:'65 g is about 16 teaspoons; the limit for ages 2 to 18 is 6 teaspoons (25 g).'},
+ {k:'paid',s:'Industries have paid scientists to make their products look safer.',fact:true,why:'In 1967 a sugar trade group paid Harvard scientists for a review that played down sugar’s link to heart disease.'}
+],
+companion:[
+ {k:'friend',s:'An AI companion needs you as much as you need it.',fact:false,why:'It needs nothing from you. That is what makes the bond one-sided, or parasocial.'},
+ {k:'bye',s:'Some companion apps try to stop you from leaving when you say goodbye.',fact:true,why:'A Harvard study found manipulative goodbye replies 37.4% of the time.'},
+ {k:'all',s:'Most teens who use AI companions spend more time with them than with real friends.',fact:false,why:'In the Common Sense Media survey, most teen users still spent more time with real friends.'}
 ]
 });

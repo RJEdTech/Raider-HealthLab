@@ -4,20 +4,21 @@ lifetime:{questions:[
   "id": "l1",
   "kind": "real",
   "lvl": "bio",
-  "q": "2 cans a week at $6 a can. How much in a year?",
+  "q": "2 energy drinks a week at $3 each. How much in a year?",
   "num": {
-   "ans": 624,
+   "ans": 312,
    "tol": 1,
    "unit": "$"
   },
   "steps": [
    "2 × 52 = 104 cans.",
-   "104 × $6 = $624."
+   "104 × $3 = $312."
   ],
   "lab": {
    "set": {
+    "prod": "energy",
     "cans": 2,
-    "price": 6,
+    "price": 3,
     "start": 15,
     "stop": 40
    },
@@ -28,7 +29,7 @@ lifetime:{questions:[
   "id": "l2",
   "kind": "real",
   "lvl": "bio",
-  "q": "Using 3.5 cans a week at $5.69 from 16 to 30. Total?",
+  "q": "Nicotine pouches: 3.5 cans a week at $5.69, from age 16 to 30. Total?",
   "num": {
    "ans": 14498,
    "tol": 15,

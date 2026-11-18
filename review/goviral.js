@@ -1,5 +1,5 @@
 BioLab.addReview({
-zynviral:{questions:[
+goviral:{questions:[
  {
   "id": "z1",
   "kind": "test",
@@ -42,7 +42,7 @@ zynviral:{questions:[
   "id": "z3",
   "kind": "test",
   "lvl": "bio",
-  "q": "Which is covered by the FDA’s limits on Zyn marketing?",
+  "q": "Which is covered by rules limiting a company’s marketing?",
   "choices": [
    "A teen’s funny video",
    "The company’s own ads",
