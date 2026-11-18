@@ -85,6 +85,11 @@ streaks:[
  {k:'likes',s:'In a brain-scan study, teens were more likely to like a photo that already showed many likes.',fact:true,why:'Sherman et al. (2016) assigned like counts at random; the same photo got more likes when it already showed many.'},
  {k:'court',s:'No court has ever found a social media company responsible for how it designed its app.',fact:false,why:'In March 2026 a Los Angeles jury found Meta and YouTube negligent in their design. The companies can appeal.'}
 ],
+teenbrain:[
+ {k:'25',s:'Your brain finishes developing at exactly age 25.',fact:false,why:'Development is gradual and differs by person. Self-control areas mature through the 20s, and a 2025 study of about 4,200 people found wiring changes continuing into the early 30s.'},
+ {k:'sleep',s:'Teens stay up late because they need less sleep than children.',fact:false,why:'Teens still need 8 to 10 hours. At puberty the body clock shifts about 2 hours later.'},
+ {k:'peers',s:'In an experiment, teens took more risks in a driving game when friends were watching, but adults did not.',fact:true,why:'Gardner and Steinberg (2005), 306 people: early teens scored about twice as high on risky driving with friends watching.'}
+],
 goviral:[
  {k:'paid',s:'If you see a product all over your feed, the company must be paying for it.',fact:false,why:'Unpaid posts by users can spread a product widely. The company still profits.'},
  {k:'rule',s:'Rules on a company’s ads also apply to videos regular users post about its product.',fact:false,why:'Marketing rules cover the company’s own advertising, not fans’ posts.'},

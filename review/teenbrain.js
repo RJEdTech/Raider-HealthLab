@@ -1,0 +1,10 @@
+BioLab.addReview({
+teenbrain:{questions:[
+ {"id":"t1","kind":"test","lvl":"bio","q":"40% of early starters vs. 10% of people who started at 21 later developed alcohol dependence. What is the relative risk?","num":{"ans":4,"tol":0.05,"unit":"×"},"steps":["40 ÷ 10 = 4."]},
+ {"id":"t2","kind":"test","lvl":"bio","q":"Which statement about brain development is best supported?","choices":["The brain switches to “adult” exactly at 25","The brain matures gradually, back to front, with self-control areas finishing through the 20s","Teen brains are finished by 16"],"correct":1,"steps":["Development is gradual; newer studies find wiring changes continuing into the early 30s."],"lab":{"set":{"age":16},"look":"Slide the age from 10 to 30 and watch which areas finish last."}},
+ {"id":"t3","kind":"test","lvl":"bio","q":"Why do teens often struggle to fall asleep early?","choices":["They need less sleep than adults","At puberty the body clock shifts about 2 hours later","Caffeine has no effect on adults"],"correct":1,"steps":["Teens still need 8 to 10 hours; the timing shifts later."]},
+ {"id":"t4","kind":"test","lvl":"honors","q":"Starting at 17: 24.5% dependent. Starting at 21: 10%. How many percent more likely is the age-17 group?","num":{"ans":145,"tol":1,"unit":"%"},"steps":["Relative risk = 24.5 ÷ 10 = 2.45.","Percent more likely = (2.45 − 1) × 100 = 145%."]},
+ {"id":"t5","kind":"test","lvl":"honors","q":"Studies of concussion recovery in teens vs. adults disagree. What is the honest summary?","choices":["Teens always take longer","Adults always take longer","Some studies find teens take longer and others find no clear difference, so the evidence is mixed"],"correct":2,"steps":["A 2020 study of 594 patients found no significant age difference; doctors still treat young athletes with extra care."]},
+ {"id":"t6","kind":"ap","lvl":"ap","q":"Odds ratio for 40% vs. 10%? Use odds = p ÷ (1 − p).","num":{"ans":6,"tol":0.05,"unit":"×"},"steps":["0.40 ÷ 0.60 = 0.667; 0.10 ÷ 0.90 = 0.111.","0.667 ÷ 0.111 = 6.0."]}
+]}
+});
