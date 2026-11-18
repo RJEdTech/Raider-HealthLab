@@ -112,7 +112,7 @@ quitworks:[
 ]
 });
 
-/* Batch 4 (Nov 18, 2026): Hooked by design. */
+/* Batch 4 (Nov 18, 2026): The habit economy. */
 BioLab.addMyths({
 buynow:[
  {k:'timer',s:'If a countdown timer runs out, the deal is always gone.',fact:false,why:'The FTC found timers on offers that were not really time-limited. Sometimes the clock just resets.'},
