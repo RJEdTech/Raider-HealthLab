@@ -542,3 +542,12 @@ html.embed .u-back,html.embed .pb-back+.none{display:none!important}
 .home-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin:6px 0 16px;max-width:1120px}
 .home-cards:has(>a:only-child){max-width:72ch}
 .home-cards>a{margin:0!important;max-width:none!important;box-sizing:border-box}
+
+/* Guided, Nov 24, 2026: on a 1366x720 laptop the first move ("Lock in my gut answer", then each next action) sat below the fold on
+   every tool. The row with the main button now stays pinned to the bottom of the screen while the side panel runs below it.
+   overflow:clip (not hidden) on the stage and visible on the panel let sticky work. */
+@media (min-width:900px){
+  .sim.m-guided .stage{overflow:clip}
+  .sim.m-guided .stage>.donecard,.sim.m-guided .stage>.tourbar{overflow:visible}
+}
+.sim.m-guided .donecard>.row:has(.btn.primary),.sim.m-guided .tourbar>.row:has([data-tour=next]){position:sticky;bottom:0;z-index:2;background:var(--card2);margin:8px -18px 0;padding:10px 18px 12px;border-top:1px solid var(--line);box-shadow:0 -6px 12px -8px rgba(0,0,0,.18)}
